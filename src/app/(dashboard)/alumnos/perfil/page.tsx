@@ -1,4 +1,4 @@
-// GRUPO ALUMNOS — "Mi perfil": carrera, temas que interesan y que no, y si busca equipo.
+// GRUPO ALUMNOS — "Mi perfil": carrera, cuánto le interesa cada tema (1 a 5 estrellas) y si busca equipo.
 import { Suspense } from "react";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -6,38 +6,50 @@ import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { CARRERAS, TEMAS } from "../_lib/catalogo";
+import { CARRERAS } from "../_lib/catalogo";
+import { UMBRAL } from "../_lib/afinidad";
+import { Estrellas } from "../_components/estrellas";
 
-const OPCIONES = [
-  { valor: "si", label: "Me interesa" },
-  { valor: "neutral", label: "Me da igual" },
-  { valor: "no", label: "No me interesa" },
-] as const;
+const volverCon = (error: string) => redirect(`/alumnos/perfil?error=${encodeURIComponent(error)}`);
 
 async function guardarPerfil(formData: FormData) {
   "use server";
   const persona = await requireRol("alumno");
+  const supabase = await createClient();
 
   const carrera = String(formData.get("carrera") ?? "");
-  if (!(CARRERAS as readonly string[]).includes(carrera)) {
-    redirect(`/alumnos/perfil?error=${encodeURIComponent("Elegí tu carrera de la lista.")}`);
+  if (!(CARRERAS as readonly string[]).includes(carrera)) volverCon("Elegí tu carrera de la lista.");
+
+  const { data: maestro, error: errorMaestro } = await supabase.from("alumnos_intereses_maestro").select("id").eq("activo", true);
+  if (errorMaestro) volverCon(`No se pudo leer el listado de intereses: ${errorMaestro.message}`);
+
+  const respuestas = (maestro ?? []).map(({ id }) => ({ interes_id: id, estrellas: Number(formData.get(`interes_${id}`) ?? 0) }));
+  const esValida = (n: number) => Number.isInteger(n) && n >= 1 && n <= 5;
+  const calificadas = respuestas.filter((r) => esValida(r.estrellas));
+  const sinCalificar = respuestas.filter((r) => !esValida(r.estrellas)).map((r) => r.interes_id);
+  if (!calificadas.some((r) => r.estrellas >= UMBRAL.mucho)) {
+    volverCon(`Poné ${UMBRAL.mucho} o 5 estrellas en al menos un tema que te interese.`);
   }
 
-  const intereses = TEMAS.filter((_, i) => formData.get(`tema_${i}`) === "si");
-  const no_intereses = TEMAS.filter((_, i) => formData.get(`tema_${i}`) === "no");
-  if (intereses.length === 0) redirect(`/alumnos/perfil?error=${encodeURIComponent("Marcá al menos un tema que te interese.")}`);
-
-  const supabase = await createClient();
-  const { error } = await supabase.from("alumnos_perfiles").upsert({
+  const ahora = new Date().toISOString();
+  const { error: errorPerfil } = await supabase.from("alumnos_perfiles").upsert({
     persona_id: persona.id,
     carrera,
-    intereses: [...intereses],
-    no_intereses: [...no_intereses],
     sobre_mi: String(formData.get("sobre_mi") ?? "").trim() || null,
     busca_equipo: formData.get("busca_equipo") === "on",
-    updated_at: new Date().toISOString(),
+    updated_at: ahora,
   });
-  if (error) redirect(`/alumnos/perfil?error=${encodeURIComponent(`No se pudo guardar: ${error.message}`)}`);
+  if (errorPerfil) volverCon(`No se pudo guardar: ${errorPerfil.message}`);
+
+  const { error: errorIntereses } = await supabase
+    .from("alumnos_intereses")
+    .upsert(calificadas.map((r) => ({ ...r, persona_id: persona.id, updated_at: ahora })));
+  if (errorIntereses) volverCon(`No se pudieron guardar los intereses: ${errorIntereses.message}`);
+
+  if (sinCalificar.length > 0) {
+    const { error } = await supabase.from("alumnos_intereses").delete().eq("persona_id", persona.id).in("interes_id", sinCalificar);
+    if (error) volverCon(`No se pudieron quitar calificaciones: ${error.message}`);
+  }
 
   revalidatePath("/alumnos", "layout");
   redirect("/alumnos/perfil?ok=1");
@@ -53,16 +65,17 @@ async function Aviso({ searchParams }: Pick<PageProps<"/alumnos/perfil">, "searc
 export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/perfil">) {
   const persona = await requireRol("alumno");
   const supabase = await createClient();
-  const { data: perfil, error } = await supabase
-    .from("alumnos_perfiles")
-    .select("*")
-    .eq("persona_id", persona.id)
-    .maybeSingle();
-  if (error) throw error;
+  const [{ data: perfil, error: e1 }, { data: maestro, error: e2 }, { data: misIntereses, error: e3 }] = await Promise.all([
+    supabase.from("alumnos_perfiles").select("*").eq("persona_id", persona.id).maybeSingle(),
+    supabase.from("alumnos_intereses_maestro").select("id, nombre").eq("activo", true).order("orden").order("nombre"),
+    supabase.from("alumnos_intereses").select("interes_id, estrellas").eq("persona_id", persona.id),
+  ]);
+  if (e1) throw e1;
+  if (e2) throw e2;
+  if (e3) throw e3;
 
+  const estrellasDe = new Map(misIntereses.map((i) => [i.interes_id, i.estrellas]));
   const carreraGuardada = perfil && (CARRERAS as readonly string[]).includes(perfil.carrera) ? perfil.carrera : "";
-  const valorTema = (tema: string) =>
-    perfil?.intereses.includes(tema) ? "si" : perfil?.no_intereses.includes(tema) ? "no" : "neutral";
 
   return (
     <>
@@ -93,27 +106,17 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
         <section className="grid gap-4 border bg-card p-6">
           <div>
             <h2 className="font-serif text-lg">¿Hacia dónde te gustaría llevar un proyecto?</h2>
-            <p className="text-sm text-[#666]">Marcá al menos un tema que te interese. Lo que no te interesa también cuenta.</p>
+            <p className="text-sm text-[#666]">
+              Calificá cada tema de 1 a 5 estrellas: 1 es “no me interesa para nada” y 5 “me encantaría trabajar en esto”.
+              Los que dejes sin calificar no cuentan. Poné {UMBRAL.mucho} o 5 estrellas en al menos uno.
+            </p>
           </div>
           <div className="divide-y border bg-background">
-            {TEMAS.map((tema, i) => (
-              <fieldset key={tema} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <legend className="float-left text-sm sm:float-none">{tema}</legend>
-                <div className="flex gap-4">
-                  {OPCIONES.map(({ valor, label }) => (
-                    <label key={valor} className="flex items-center gap-1.5 text-sm text-[#666] has-checked:text-primary">
-                      <input
-                        type="radio"
-                        name={`tema_${i}`}
-                        value={valor}
-                        defaultChecked={valorTema(tema) === valor}
-                        className="accent-current"
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
+            {maestro.map(({ id, nombre }) => (
+              <div key={id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <span className="text-sm">{nombre}</span>
+                <Estrellas nombre={`interes_${id}`} valor={estrellasDe.get(id) ?? 0} tema={nombre} />
+              </div>
             ))}
           </div>
         </section>

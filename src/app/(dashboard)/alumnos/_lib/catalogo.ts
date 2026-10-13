@@ -1,4 +1,4 @@
-// GRUPO ALUMNOS — listas que usa el perfil. Editarlas acá alcanza para cambiar las opciones.
+// GRUPO ALUMNOS — carreras del perfil. Los temas de interés están en la tabla alumnos_intereses_maestro.
 
 // Carreras que cursan el taller de Emprendimientos.
 export const CARRERAS = [
@@ -7,21 +7,4 @@ export const CARRERAS = [
   "Economía Empresarial",
   "Agronegocios",
   "Marketing",
-] as const;
-
-export const TEMAS = [
-  "Salud",
-  "Educación",
-  "Agro y alimentos",
-  "Finanzas y fintech",
-  "Sustentabilidad y ambiente",
-  "Impacto social",
-  "Consumo y retail",
-  "Tecnología y software",
-  "Turismo y entretenimiento",
-  "Logística y movilidad",
-  "Deportes y bienestar",
-  "Industria y manufactura",
-  "Moda y diseño",
-  "Inmobiliario y construcción",
 ] as const;

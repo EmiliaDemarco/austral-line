@@ -10,42 +10,49 @@ export default async function CompanerosAfines() {
   const persona = await requireRol("alumno");
   const supabase = await createClient();
 
-  const [{ data: miPerfil, error: e1 }, { data: otros, error: e2 }, { data: integrantes, error: e3 }] = await Promise.all([
-    supabase.from("alumnos_perfiles").select("*").eq("persona_id", persona.id).maybeSingle(),
-    supabase
-      .from("alumnos_perfiles")
-      .select("persona_id, carrera, intereses, no_intereses, sobre_mi, personas(nombre, email)")
-      .eq("busca_equipo", true)
-      .neq("persona_id", persona.id),
+  const [perfiles, maestro, respuestas, integrantes] = await Promise.all([
+    supabase.from("alumnos_perfiles").select("persona_id, carrera, sobre_mi, busca_equipo, personas(nombre, email)"),
+    supabase.from("alumnos_intereses_maestro").select("id, nombre"),
+    supabase.from("alumnos_intereses").select("persona_id, interes_id, estrellas"),
     supabase.from("proyecto_integrantes").select("persona_id, proyectos(nombre)"),
   ]);
-  if (e1) throw e1;
-  if (e2) throw e2;
-  if (e3) throw e3;
+  for (const r of [perfiles, maestro, respuestas, integrantes]) if (r.error) throw r.error;
+
+  // RLS ya limita lo que llega: mi perfil y los de quienes buscan equipo.
+  const miPerfil = perfiles.data!.find((p) => p.persona_id === persona.id);
+  const otros = perfiles.data!.filter((p) => p.persona_id !== persona.id && p.busca_equipo);
+  const nombreTema = new Map(maestro.data!.map((m) => [m.id, m.nombre]));
+  const estrellasDe = (id: string) =>
+    new Map(respuestas.data!.filter((r) => r.persona_id === id).map((r) => [r.interes_id, r.estrellas]));
 
   if (!miPerfil) {
     return (
       <div className="flex max-w-xl flex-col items-start gap-4 border bg-card p-8">
         <h1 className="font-serif text-2xl">Primero, contanos de vos</h1>
         <p className="text-sm text-[#666]">
-          Para sugerirte compañeros necesitamos tu carrera y los temas que te interesan. Te lleva un minuto.
+          Para sugerirte compañeros necesitamos tu carrera y cuánto te interesa cada tema. Te lleva un minuto.
         </p>
         <Link href="/alumnos/perfil" className={buttonVariants()}>Completar mi perfil</Link>
       </div>
     );
   }
 
-  const proyectoDe = new Map(integrantes.map((i) => [i.persona_id, i.proyectos.nombre]));
+  const proyectoDe = new Map(integrantes.data!.map((i) => [i.persona_id, i.proyectos.nombre]));
+  const yo = { carrera: miPerfil.carrera, estrellas: estrellasDe(persona.id) };
   const sugerencias = otros
-    .map((o) => ({ ...o, afinidad: calcularAfinidad(miPerfil, o) }))
+    .map((o) => ({
+      ...o,
+      afinidad: calcularAfinidad(yo, { carrera: o.carrera, estrellas: estrellasDe(o.persona_id) }, (id) => nombreTema.get(id) ?? "?"),
+    }))
     .sort((a, b) => b.afinidad.puntaje - a.afinidad.puntaje);
 
   return (
     <>
       <h1 className="mb-2 font-serif text-2xl">Compañeros afines</h1>
       <p className="mb-6 max-w-2xl text-sm text-[#666]">
-        Alumnos que buscan equipo, ordenados por afinidad con vos: suman los temas en común y ser de otra carrera;
-        restan los temas que a uno le interesan y al otro no. Es una sugerencia: la decisión es de ustedes.
+        Alumnos que buscan equipo, ordenados por afinidad con vos: suman los temas que a los dos les interesan mucho
+        (4 o 5 estrellas) y ser de otra carrera; restan los temas que a uno le encantan y al otro casi nada (1 o 2).
+        Es una sugerencia: la decisión es de ustedes.
       </p>
 
       {!miPerfil.busca_equipo && (
@@ -74,7 +81,7 @@ export default async function CompanerosAfines() {
                   <div><dt className="inline text-[#666]">Interdisciplinario: </dt><dd className="inline">es de otra carrera</dd></div>
                 )}
                 {s.afinidad.enComun.length > 0 && (
-                  <div><dt className="inline text-[#666]">Temas en común: </dt><dd className="inline">{s.afinidad.enComun.join(", ")}</dd></div>
+                  <div><dt className="inline text-[#666]">Les interesa a los dos: </dt><dd className="inline">{s.afinidad.enComun.join(", ")}</dd></div>
                 )}
                 {s.afinidad.choques.length > 0 && (
                   <div><dt className="inline text-[#666]">Ojo, no coinciden en: </dt><dd className="inline">{s.afinidad.choques.join(", ")}</dd></div>

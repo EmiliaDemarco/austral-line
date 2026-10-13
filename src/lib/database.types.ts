@@ -23,16 +23,56 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "alumnos_perfiles": {
+            "alumnos_intereses": {
                   Row: {
-                    "busca_equipo": boolean,"carrera": string,"intereses": (string)[],"no_intereses": (string)[],"persona_id": string,"sobre_mi": string | null,"updated_at": string
+                    "estrellas": number,"interes_id": number,"persona_id": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "busca_equipo"?: boolean,"carrera": string,"intereses"?: (string)[],"no_intereses"?: (string)[],"persona_id": string,"sobre_mi"?: string | null,"updated_at"?: string
+                    "estrellas": number,"interes_id": number,"persona_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "busca_equipo"?: boolean,"carrera"?: string,"intereses"?: (string)[],"no_intereses"?: (string)[],"persona_id"?: string,"sobre_mi"?: string | null,"updated_at"?: string
+                    "estrellas"?: number,"interes_id"?: number,"persona_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_intereses_interes_id_fkey"
+      columns: ["interes_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_intereses_maestro"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_intereses_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"alumnos_intereses_maestro": {
+                  Row: {
+                    "activo": boolean,"created_at": string,"id": number,"nombre": string,"orden": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "activo"?: boolean,"created_at"?: string,"id"?: never,"nombre": string,"orden"?: number
+                  }
+                  Update: {
+                    "activo"?: boolean,"created_at"?: string,"id"?: never,"nombre"?: string,"orden"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"alumnos_perfiles": {
+                  Row: {
+                    "busca_equipo": boolean,"carrera": string,"persona_id": string,"sobre_mi": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "busca_equipo"?: boolean,"carrera": string,"persona_id": string,"sobre_mi"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "busca_equipo"?: boolean,"carrera"?: string,"persona_id"?: string,"sobre_mi"?: string | null,"updated_at"?: string
                   }
                   Relationships: [
                     {
