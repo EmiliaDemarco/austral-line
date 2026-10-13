@@ -1,9 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  // ponytail: sin cacheComponents a propósito, todo dinámico = menos conceptos para el curso
   turbopack: {
     rules: {
       "*.css": {

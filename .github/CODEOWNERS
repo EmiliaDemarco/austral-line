@@ -1,0 +1,8 @@
+# El profe revisa todo lo compartido. Los grupos se revisan entre sí su carpeta.
+# ponytail: reemplazar los equipos por los usuarios de GitHub reales (o crear los teams en la org).
+*                                @MatiSolina
+/src/app/(dashboard)/alumnos/    @MatiSolina @austral-emprendimientos/alumnos
+/src/app/(dashboard)/mentores/   @MatiSolina @austral-emprendimientos/mentores
+/src/app/(dashboard)/jurado/     @MatiSolina @austral-emprendimientos/jurado
+/src/app/(dashboard)/austral/    @MatiSolina @austral-emprendimientos/austral
+/supabase/                       @MatiSolina

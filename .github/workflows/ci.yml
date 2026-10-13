@@ -1,0 +1,50 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Aplicar todas las migraciones desde cero
+        run: npx supabase db start
+      - name: Los tipos commiteados coinciden con las migraciones
+        run: |
+          npx supabase gen types typescript --local > src/lib/database.types.ts
+          git diff --exit-code src/lib/database.types.ts || (echo "::error::Corré npm run db:types y commiteá el resultado" && exit 1)
+      - name: Ninguna migración nueva borra ni renombra cosas
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin ${{ github.base_ref }} --depth 1
+          files=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }} -- supabase/migrations)
+          [ -z "$files" ] || ! grep -niE '\b(drop|rename)\b|alter column .* type' $files || (echo "::error::Las migraciones solo pueden sumar. Para borrar o renombrar, hablá con el profe." && exit 1)
+      - name: Ninguna migración que ya está en main fue editada
+        if: github.event_name == 'pull_request'
+        run: |
+          edited=$(git diff --name-only --diff-filter=DMR origin/${{ github.base_ref }} -- supabase/migrations)
+          [ -z "$edited" ] || (echo "::error::No se editan migraciones ya mergeadas: $edited" && exit 1)
+      - run: npm run lint
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder
+
+  deploy-db:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npx supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }} -p "${{ secrets.SUPABASE_DB_PASSWORD }}"
+      - run: npx supabase db push -p "${{ secrets.SUPABASE_DB_PASSWORD }}"
