@@ -39,3 +39,23 @@ select pg_temp.crear_login(email) from personas
 -- GRUPO JURADO: un proyecto finalista más para probar la planilla de evaluación.
 insert into proyectos (nombre, descripcion, estado) values
   ('Reciclá', 'App que premia a los vecinos por separar residuos', 'finalista');
+
+-- GRUPO JURADO: una segunda jurado con evaluaciones cargadas, para ver el tablero de deliberación.
+insert into personas (nombre, email, rol) values ('Lucía Inversora', 'lucia@fondo.com', 'jurado');
+select pg_temp.crear_login('lucia@fondo.com');
+
+with ev as (
+  insert into jurado_evaluaciones (proyecto_id, jurado_id, propuesta_valor, comentarios)
+  select p.id, pe.id, v.propuesta, v.comentario
+  from (values
+    ('AgroSense', 'Ahorro de agua para productores medianos con sensores baratos', 'Equipo sólido. Falta mostrar tracción con clientes reales.'),
+    ('Reciclá', 'Premios por reciclar para que los vecinos separen en origen', 'Buena idea, el modelo de ingresos no queda claro.')
+  ) as v(proyecto, propuesta, comentario)
+  join proyectos p on p.nombre = v.proyecto
+  join personas pe on pe.email = 'lucia@fondo.com'
+  returning id, proyecto_id
+)
+insert into jurado_puntajes (evaluacion_id, criterio_id, puntaje)
+select ev.id, c.id,
+  case when p.nombre = 'AgroSense' then 9 - c.orden + 1 else 4 + c.orden end
+from ev join proyectos p on p.id = ev.proyecto_id cross join jurado_criterios c;
