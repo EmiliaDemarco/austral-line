@@ -35,3 +35,7 @@ insert into eventos (nombre, tipo, inicio, lugar) values
 
 select pg_temp.crear_login(email) from personas
   where email in ('admin@austral.edu.ar', 'ana@alumnos.austral.edu.ar', 'marta@empresa.com', 'julio@empresa.com');
+
+-- GRUPO JURADO: un proyecto finalista más para probar la planilla de evaluación.
+insert into proyectos (nombre, descripcion, estado) values
+  ('Reciclá', 'App que premia a los vecinos por separar residuos', 'finalista');

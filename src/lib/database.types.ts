@@ -37,6 +37,72 @@ export type Database = {
                   Relationships: [
                     
                   ]
+                },"jurado_criterios": {
+                  Row: {
+                    "created_at": string,"descripcion": string | null,"id": string,"nombre": string,"orden": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"descripcion"?: string | null,"id"?: string,"nombre": string,"orden"?: number
+                  }
+                  Update: {
+                    "created_at"?: string,"descripcion"?: string | null,"id"?: string,"nombre"?: string,"orden"?: number
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"jurado_evaluaciones": {
+                  Row: {
+                    "comentarios": string | null,"created_at": string,"id": string,"jurado_id": string,"propuesta_valor": string | null,"proyecto_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "comentarios"?: string | null,"created_at"?: string,"id"?: string,"jurado_id": string,"propuesta_valor"?: string | null,"proyecto_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "comentarios"?: string | null,"created_at"?: string,"id"?: string,"jurado_id"?: string,"propuesta_valor"?: string | null,"proyecto_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "jurado_evaluaciones_jurado_id_fkey"
+      columns: ["jurado_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "jurado_evaluaciones_proyecto_id_fkey"
+      columns: ["proyecto_id"]
+isOneToOne: false
+      referencedRelation: "proyectos"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"jurado_puntajes": {
+                  Row: {
+                    "criterio_id": string,"evaluacion_id": string,"puntaje": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "criterio_id": string,"evaluacion_id": string,"puntaje": number
+                  }
+                  Update: {
+                    "criterio_id"?: string,"evaluacion_id"?: string,"puntaje"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "jurado_puntajes_criterio_id_fkey"
+      columns: ["criterio_id"]
+isOneToOne: false
+      referencedRelation: "jurado_criterios"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "jurado_puntajes_evaluacion_id_fkey"
+      columns: ["evaluacion_id"]
+isOneToOne: false
+      referencedRelation: "jurado_evaluaciones"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"personas": {
                   Row: {
                     "created_at": string,"email": string,"id": string,"nombre": string,"rol": Database["public"]['Enums']["rol"]
