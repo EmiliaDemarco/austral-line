@@ -7,8 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { CARRERAS } from "../_lib/catalogo";
-import { UMBRAL } from "../_lib/afinidad";
 import { Estrellas } from "../_components/estrellas";
+
+const MINIMO_CALIFICADOS = 4;
 
 const volverCon = (error: string) => redirect(`/alumnos/perfil?error=${encodeURIComponent(error)}`);
 
@@ -17,8 +18,10 @@ async function guardarPerfil(formData: FormData) {
   const persona = await requireRol("alumno");
   const supabase = await createClient();
 
-  const carrera = String(formData.get("carrera") ?? "");
-  if (!(CARRERAS as readonly string[]).includes(carrera)) volverCon("Elegí tu carrera de la lista.");
+  // La carrera se elige una sola vez: si ya hay perfil, se mantiene la guardada (la base además lo impide).
+  const { data: existente } = await supabase.from("alumnos_perfiles").select("carrera").eq("persona_id", persona.id).maybeSingle();
+  const carrera = existente?.carrera ?? String(formData.get("carrera") ?? "");
+  if (!existente && !(CARRERAS as readonly string[]).includes(carrera)) volverCon("Elegí tu carrera de la lista.");
 
   const { data: maestro, error: errorMaestro } = await supabase.from("alumnos_intereses_maestro").select("id").eq("activo", true);
   if (errorMaestro) volverCon(`No se pudo leer el listado de intereses: ${errorMaestro.message}`);
@@ -27,8 +30,8 @@ async function guardarPerfil(formData: FormData) {
   const esValida = (n: number) => Number.isInteger(n) && n >= 1 && n <= 5;
   const calificadas = respuestas.filter((r) => esValida(r.estrellas));
   const sinCalificar = respuestas.filter((r) => !esValida(r.estrellas)).map((r) => r.interes_id);
-  if (!calificadas.some((r) => r.estrellas >= UMBRAL.mucho)) {
-    volverCon(`Poné ${UMBRAL.mucho} o 5 estrellas en al menos un tema que te interese.`);
+  if (calificadas.length < MINIMO_CALIFICADOS) {
+    volverCon(`Calificá al menos ${MINIMO_CALIFICADOS} temas (calificaste ${calificadas.length}).`);
   }
 
   const ahora = new Date().toISOString();
@@ -75,7 +78,6 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
   if (e3) throw e3;
 
   const estrellasDe = new Map(misIntereses.map((i) => [i.interes_id, i.estrellas]));
-  const carreraGuardada = perfil && (CARRERAS as readonly string[]).includes(perfil.carrera) ? perfil.carrera : "";
 
   return (
     <>
@@ -88,19 +90,21 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
       <form action={guardarPerfil} className="grid max-w-3xl gap-10">
         <section className="grid gap-4 border bg-card p-6">
           <h2 className="font-serif text-lg">Carrera</h2>
-          <div className="grid max-w-sm gap-2">
-            <Label htmlFor="carrera">¿Qué estudiás?</Label>
-            <select
-              id="carrera"
-              name="carrera"
-              required
-              defaultValue={carreraGuardada}
-              className="h-8 border bg-background px-2 text-sm"
-            >
-              <option value="" disabled>Elegí una carrera</option>
-              {CARRERAS.map((c) => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
+          {perfil ? (
+            <div className="grid gap-1">
+              <p className="font-serif text-xl">{perfil.carrera}</p>
+              <p className="text-sm text-[#666]">La carrera queda fija una vez guardada. Si te equivocaste, pedile al admin que la corrija.</p>
+            </div>
+          ) : (
+            <div className="grid max-w-sm gap-2">
+              <Label htmlFor="carrera">¿Qué estudiás?</Label>
+              <select id="carrera" name="carrera" required defaultValue="" className="h-8 border bg-background px-2 text-sm">
+                <option value="" disabled>Elegí una carrera</option>
+                {CARRERAS.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <p className="text-sm text-[#666]">Elegila bien: una vez guardada no se puede cambiar.</p>
+            </div>
+          )}
         </section>
 
         <section className="grid gap-4 border bg-card p-6">
@@ -108,13 +112,13 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
             <h2 className="font-serif text-lg">¿Hacia dónde te gustaría llevar un proyecto?</h2>
             <p className="text-sm text-[#666]">
               Calificá cada tema de 1 a 5 estrellas: 1 es “no me interesa para nada” y 5 “me encantaría trabajar en esto”.
-              Los que dejes sin calificar no cuentan. Poné {UMBRAL.mucho} o 5 estrellas en al menos uno.
+              Calificá al menos {MINIMO_CALIFICADOS} temas; los que dejes sin calificar no cuentan. Podés cambiarlos cuando quieras.
             </p>
           </div>
-          <div className="divide-y border bg-background">
+          <div className="grid gap-2">
             {maestro.map(({ id, nombre }) => (
-              <div key={id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <span className="text-sm">{nombre}</span>
+              <div key={id} className="flex items-center justify-between gap-6 border bg-background px-4 py-3">
+                <span className="min-w-0 text-sm">{nombre}</span>
                 <Estrellas nombre={`interes_${id}`} valor={estrellasDe.get(id) ?? 0} tema={nombre} />
               </div>
             ))}

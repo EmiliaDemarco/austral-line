@@ -91,3 +91,57 @@ create policy "alumno ve lo suyo y quienes buscan equipo" on alumnos_intereses f
 create policy "alumno gestiona lo suyo" on alumnos_intereses for all to authenticated
   using (mi_rol() = 'alumno' and persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email')))
   with check (mi_rol() = 'alumno' and persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email')));
+
+-- La carrera es fija una vez cargada: solo el admin puede corregirla. ------------
+create function public.alumnos_carrera_inmutable() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if new.carrera is distinct from old.carrera and public.mi_rol() is distinct from 'admin' then
+    raise exception 'La carrera no se puede cambiar. Pedile al admin que la corrija.';
+  end if;
+  return new;
+end $$;
+
+create trigger carrera_inmutable before update on alumnos_perfiles
+  for each row execute function public.alumnos_carrera_inmutable();
+
+-- Historial de cambios de intereses ------------------------------------------------
+-- Se completa solo (trigger): queda registro de cada vez que un alumno califica,
+-- cambia o quita un tema. Sirve para ver la evolución y para resolver reclamos.
+create table alumnos_intereses_historial (
+  id bigint generated always as identity primary key,
+  persona_id uuid not null references personas(id) on delete cascade,
+  interes_id smallint not null references alumnos_intereses_maestro(id) on delete cascade,
+  estrellas_antes smallint,
+  estrellas_despues smallint,
+  cambiado_en timestamptz not null default now()
+);
+
+alter table alumnos_intereses_historial enable row level security;
+
+create policy "admin ve todo" on alumnos_intereses_historial for select to authenticated
+  using (mi_rol() = 'admin');
+create policy "alumno ve lo suyo" on alumnos_intereses_historial for select to authenticated
+  using (mi_rol() = 'alumno' and persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email')));
+-- Nadie escribe directo: solo el trigger (security definer).
+
+create function public.alumnos_registrar_cambio_interes() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  insert into public.alumnos_intereses_historial (persona_id, interes_id, estrellas_antes, estrellas_despues)
+  values (
+    coalesce(new.persona_id, old.persona_id),
+    coalesce(new.interes_id, old.interes_id),
+    case when tg_op = 'INSERT' then null else old.estrellas end,
+    case when tg_op = 'DELETE' then null else new.estrellas end
+  );
+  return null;
+end $$;
+
+create trigger historial_alta after insert on alumnos_intereses
+  for each row execute function public.alumnos_registrar_cambio_interes();
+create trigger historial_cambio after update on alumnos_intereses
+  for each row when (old.estrellas is distinct from new.estrellas)
+  execute function public.alumnos_registrar_cambio_interes();
+create trigger historial_baja after delete on alumnos_intereses
+  for each row execute function public.alumnos_registrar_cambio_interes();

@@ -49,6 +49,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"alumnos_intereses_historial": {
+                  Row: {
+                    "cambiado_en": string,"estrellas_antes": number | null,"estrellas_despues": number | null,"id": number,"interes_id": number,"persona_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cambiado_en"?: string,"estrellas_antes"?: number | null,"estrellas_despues"?: number | null,"id"?: never,"interes_id": number,"persona_id": string
+                  }
+                  Update: {
+                    "cambiado_en"?: string,"estrellas_antes"?: number | null,"estrellas_despues"?: number | null,"id"?: never,"interes_id"?: number,"persona_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_intereses_historial_interes_id_fkey"
+      columns: ["interes_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_intereses_maestro"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_intereses_historial_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"alumnos_intereses_maestro": {
                   Row: {
                     "activo": boolean,"created_at": string,"id": number,"nombre": string,"orden": number

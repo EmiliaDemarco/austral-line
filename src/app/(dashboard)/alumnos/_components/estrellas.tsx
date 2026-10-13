@@ -1,11 +1,12 @@
 // GRUPO ALUMNOS — calificación de 1 a 5 estrellas sin JavaScript: radios + CSS.
 // Los radios van en orden inverso (5 → 1) y la fila se invierte, así "elegido y los de la izquierda"
-// se pintan con el selector de hermanos (~). Incluye "Quitar" para dejar el tema sin calificar.
+// se pintan con el selector de hermanos (~). "Quitar" deja el tema sin calificar; mientras no hay
+// calificación queda invisible pero ocupa su lugar, así las estrellas no se mueven.
 import { Star } from "lucide-react";
 
 export function Estrellas({ nombre, valor, tema }: { nombre: string; valor: number; tema: string }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex shrink-0 items-center gap-3">
       <div
         role="radiogroup"
         aria-label={`Cuánto te interesa ${tema}`}
@@ -15,7 +16,7 @@ export function Estrellas({ nombre, valor, tema }: { nombre: string; valor: numb
           <Estrella key={n} nombre={nombre} n={n} valor={valor} />
         ))}
       </div>
-      <label className="text-xs text-[#666] has-checked:hidden hover:text-primary">
+      <label className="w-10 cursor-pointer text-right text-xs text-[#666] has-checked:invisible hover:text-primary">
         <input type="radio" name={nombre} value="0" defaultChecked={valor === 0} className="sr-only" />
         Quitar
       </label>

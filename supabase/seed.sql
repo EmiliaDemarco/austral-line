@@ -64,8 +64,9 @@ from (values
   ('diego@alumnos.austral.edu.ar', 'Agro y alimentos', 5), ('diego@alumnos.austral.edu.ar', 'Sustentabilidad y ambiente', 4),
   ('diego@alumnos.austral.edu.ar', 'Moda y diseño', 1), ('diego@alumnos.austral.edu.ar', 'Educación', 3),
   ('elena@alumnos.austral.edu.ar', 'Agro y alimentos', 4), ('elena@alumnos.austral.edu.ar', 'Finanzas y fintech', 5),
-  ('elena@alumnos.austral.edu.ar', 'Salud', 1),
-  ('bruno@alumnos.austral.edu.ar', 'Educación', 5), ('bruno@alumnos.austral.edu.ar', 'Tecnología y software', 5)
+  ('elena@alumnos.austral.edu.ar', 'Salud', 1), ('elena@alumnos.austral.edu.ar', 'Consumo y retail', 3),
+  ('bruno@alumnos.austral.edu.ar', 'Educación', 5), ('bruno@alumnos.austral.edu.ar', 'Tecnología y software', 5),
+  ('bruno@alumnos.austral.edu.ar', 'Agro y alimentos', 2), ('bruno@alumnos.austral.edu.ar', 'Salud', 3)
 ) as v(email, interes, estrellas)
 join personas pe on pe.email = v.email
 join alumnos_intereses_maestro m on m.nombre = v.interes;
