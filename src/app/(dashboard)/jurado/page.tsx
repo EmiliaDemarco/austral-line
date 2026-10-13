@@ -4,7 +4,7 @@ import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { estadosEvaluables } from "./_lib";
+import { estadosEvaluables, promedio } from "./_lib";
 
 export default async function Jurado() {
   const persona = await requireRol("jurado");
@@ -16,10 +16,7 @@ export default async function Jurado() {
   if (proyectos.error) throw proyectos.error;
   if (evaluaciones.error) throw evaluaciones.error;
 
-  const promedios = new Map(evaluaciones.data.map((e) => {
-    const puntajes = e.jurado_puntajes.map((p) => p.puntaje);
-    return [e.proyecto_id, puntajes.reduce((a, b) => a + b, 0) / (puntajes.length || 1)];
-  }));
+  const promedios = new Map(evaluaciones.data.map((e) => [e.proyecto_id, promedio(e.jurado_puntajes.map((p) => p.puntaje)) ?? 0]));
   const evaluados = proyectos.data.filter((p) => promedios.has(p.id)).length;
   const esJurado = persona.rol === "jurado";
 
@@ -34,12 +31,17 @@ export default async function Jurado() {
               : "Como administrador podés ver las planillas, pero las notas las cargan solo los jurados."}
           </p>
         </div>
-        {esJurado && (
-          <p className="shrink-0 sm:text-right">
-            <span className="font-serif text-3xl">{evaluados}/{proyectos.data.length}</span>
-            <span className="block text-xs text-[#666]">evaluados</span>
-          </p>
-        )}
+        <div className="flex shrink-0 items-end gap-6">
+          <Link href="/jurado/deliberacion" className="text-sm text-[#666] underline underline-offset-4 hover:text-primary">
+            Tablero de deliberación
+          </Link>
+          {esJurado && (
+            <p className="text-right">
+              <span className="font-serif text-3xl">{evaluados}/{proyectos.data.length}</span>
+              <span className="block text-xs text-[#666]">evaluados</span>
+            </p>
+          )}
+        </div>
       </div>
 
       {proyectos.data.length === 0 ? (
@@ -51,7 +53,7 @@ export default async function Jurado() {
           </TableHeader>
           <TableBody>
             {proyectos.data.map((p) => {
-              const promedio = promedios.get(p.id);
+              const tuPromedio = promedios.get(p.id);
               return (
                 <TableRow key={p.id}>
                   <TableCell>
@@ -65,9 +67,9 @@ export default async function Jurado() {
                     <Link href={`/jurado/evaluar/${p.id}`} className="hover:text-primary">
                       {!esJurado
                         ? <span className="text-sm text-[#666] underline underline-offset-4">Ver planilla</span>
-                        : promedio === undefined
+                        : tuPromedio === undefined
                         ? <span className="text-sm text-[#666] underline underline-offset-4">Evaluar</span>
-                        : <span className="font-serif text-xl">{promedio.toFixed(1)}</span>}
+                        : <span className="font-serif text-xl">{tuPromedio.toFixed(1)}</span>}
                     </Link>
                   </TableCell>
                 </TableRow>
