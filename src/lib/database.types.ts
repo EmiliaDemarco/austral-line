@@ -23,7 +23,27 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "eventos": {
+            "alumnos_perfiles": {
+                  Row: {
+                    "busca_equipo": boolean,"carrera": string,"intereses": (string)[],"no_intereses": (string)[],"persona_id": string,"sobre_mi": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "busca_equipo"?: boolean,"carrera": string,"intereses"?: (string)[],"no_intereses"?: (string)[],"persona_id": string,"sobre_mi"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "busca_equipo"?: boolean,"carrera"?: string,"intereses"?: (string)[],"no_intereses"?: (string)[],"persona_id"?: string,"sobre_mi"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_perfiles_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: true
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"eventos": {
                   Row: {
                     "created_at": string,"fin": string | null,"id": string,"inicio": string,"lugar": string | null,"nombre": string,"tipo": string
                   }
