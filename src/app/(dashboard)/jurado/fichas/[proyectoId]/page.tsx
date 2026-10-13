@@ -1,4 +1,5 @@
 // GRUPO JURADO — ficha de un proyecto, para que el jurado llegue informado al pitch y la consulte después.
+import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRol } from "@/lib/auth";
@@ -7,7 +8,16 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { FichaProyecto } from "../../_components/ficha-proyecto";
 
-export default async function FichaDelProyecto({ params }: PageProps<"/jurado/fichas/[proyectoId]">) {
+async function AvisoLink({ searchParams }: Pick<PageProps<"/jurado/fichas/[proyectoId]">, "searchParams">) {
+  const { aviso } = await searchParams;
+  return aviso === "link" && (
+    <p className="mb-8 border-l-2 border-destructive pl-4 text-sm">
+      La ficha se guardó, pero el link no: tiene que ser una dirección web (por ejemplo https://www.notion.so/…).
+    </p>
+  );
+}
+
+export default async function FichaDelProyecto({ params, searchParams }: PageProps<"/jurado/fichas/[proyectoId]">) {
   const { proyectoId } = await params;
   const persona = await requireRol("jurado");
   const supabase = await createClient();
@@ -38,6 +48,8 @@ export default async function FichaDelProyecto({ params }: PageProps<"/jurado/fi
         {integrantes.length > 0 && <p className="mt-4 text-sm text-[#666]">Equipo: {integrantes.join(", ")}</p>}
       </header>
 
+      <Suspense><AvisoLink searchParams={searchParams} /></Suspense>
+
       {ficha ? (
         <FichaProyecto ficha={ficha} />
       ) : (
@@ -53,7 +65,7 @@ export default async function FichaDelProyecto({ params }: PageProps<"/jurado/fi
             {ficha ? "Editar ficha" : "Cargar ficha"}
           </Link>
         )}
-        <Link href={`/jurado/evaluar/${proyecto.id}`} className={buttonVariants({ size: "lg" })}>Evaluar proyecto</Link>
+        <Link href={`/jurado/evaluar/${proyecto.id}`} className={buttonVariants({ size: "lg" })}>{esAdmin ? "Ver planilla" : "Evaluar proyecto"}</Link>
       </div>
     </div>
   );

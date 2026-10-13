@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { camposFicha, etapas } from "../../../_lib";
+import { camposFicha, esLinkWeb, etapas } from "../../../_lib";
 
 async function guardarFicha(formData: FormData) {
   "use server";
@@ -15,22 +15,24 @@ async function guardarFicha(formData: FormData) {
   const proyectoId = String(formData.get("proyecto_id"));
   const texto = (campo: string) => String(formData.get(campo) ?? "").trim() || null;
   const etapa = texto("etapa");
-  const link = texto("link_presentacion");
-  if (etapa && !(etapa in etapas)) throw new Error("Etapa inválida");
-  if (link && !/^https?:\/\//i.test(link)) throw new Error("El link tiene que empezar con http:// o https://");
+  // Si pegan "notion.so/..." sin https://, se lo agregamos. Lo que no sea un link web no se guarda,
+  // pero el resto de la ficha sí, para no perder lo que escribieron.
+  const pegado = texto("link_presentacion");
+  const link = pegado && !/^[a-z][a-z0-9+.-]*:/i.test(pegado) ? `https://${pegado}` : pegado;
+  const linkInvalido = !!link && !esLinkWeb(link);
 
   const supabase = await createClient();
   const { error } = await supabase.from("jurado_fichas").upsert({
     proyecto_id: proyectoId,
     ...Object.fromEntries(camposFicha.map(({ campo }) => [campo, texto(campo)])),
-    etapa,
-    link_presentacion: link,
+    etapa: etapa && etapa in etapas ? etapa : null,
+    link_presentacion: linkInvalido ? null : link,
     updated_at: new Date().toISOString(),
   });
   if (error) throw error;
 
   revalidatePath("/jurado", "layout");
-  redirect(`/jurado/fichas/${proyectoId}`);
+  redirect(`/jurado/fichas/${proyectoId}${linkInvalido ? "?aviso=link" : ""}`);
 }
 
 const ayuda: Record<(typeof camposFicha)[number]["campo"], string> = {
@@ -90,7 +92,7 @@ export default async function EditarFicha({ params }: PageProps<"/jurado/fichas/
 
         <div className="grid gap-2">
           <Label htmlFor="link_presentacion">Link a la presentación o Notion</Label>
-          <Input id="link_presentacion" name="link_presentacion" type="url" placeholder="https://" defaultValue={ficha?.link_presentacion ?? ""} />
+          <Input id="link_presentacion" name="link_presentacion" inputMode="url" placeholder="https://www.notion.so/…" defaultValue={ficha?.link_presentacion ?? ""} />
         </div>
 
         <div className="sticky bottom-0 flex justify-end gap-3 border-t bg-background py-4">
