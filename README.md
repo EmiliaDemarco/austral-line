@@ -3,6 +3,11 @@
 Panel admin para coordinar la materia de Emprendimientos: proyectos, mentores, jurado y eventos.
 Las reglas para construir están en [AGENTS.md](AGENTS.md); tu agente de IA las lee solo.
 
+## Antes de empezar
+
+Hacé un fork del repo (botón **Fork** en GitHub) y cloná tu fork. Los PR van de tu fork a este repo;
+solo el profe aprueba y mergea.
+
 ## Correrlo en tu compu (una vez)
 
 Necesitás [Node 22+](https://nodejs.org) y [Docker Desktop](https://www.docker.com/products/docker-desktop/) abierto.
