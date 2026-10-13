@@ -12,7 +12,7 @@ export default async function Deliberacion() {
   const persona = await requireRol("jurado");
   const supabase = await createClient();
   const [proyectos, criterios, jurados, evaluaciones] = await Promise.all([
-    supabase.from("proyectos").select("id, nombre, estado").in("estado", estadosEvaluables),
+    supabase.from("proyectos").select("id, nombre, estado, jurado_fichas(propuesta_valor)").in("estado", estadosEvaluables),
     supabase.from("jurado_criterios").select("id, nombre").order("orden"),
     supabase.from("personas").select("id", { count: "exact", head: true }).eq("rol", "jurado"),
     supabase
@@ -87,6 +87,12 @@ export default async function Deliberacion() {
                   <h2 className="font-serif text-xl">{p.nombre} <Badge variant="outline" className="ml-2 align-middle capitalize">{p.estado}</Badge></h2>
                   <span className="font-serif text-xl">{formato(p.general)}</span>
                 </div>
+                {p.jurado_fichas?.propuesta_valor && (
+                  <div className="mb-4 border-l-2 border-primary pl-4">
+                    <p className="text-xs text-[#666]">Propuesta de valor oficial del equipo</p>
+                    <p className="mt-1">{p.jurado_fichas.propuesta_valor}</p>
+                  </div>
+                )}
                 {p.evaluaciones.length === 0 ? (
                   <p className="text-sm text-[#666]">Ningún jurado lo evaluó todavía.</p>
                 ) : (

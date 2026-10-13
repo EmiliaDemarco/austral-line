@@ -59,3 +59,16 @@ insert into jurado_puntajes (evaluacion_id, criterio_id, puntaje)
 select ev.id, c.id,
   case when p.nombre = 'AgroSense' then 9 - c.orden + 1 else 4 + c.orden end
 from ev join proyectos p on p.id = ev.proyecto_id cross join jurado_criterios c;
+
+-- GRUPO JURADO: ficha de ejemplo para AgroSense (Reciclá queda sin ficha para ver ese caso).
+insert into jurado_fichas (proyecto_id, problema, solucion, propuesta_valor, mercado, modelo_negocio, etapa, traccion, link_presentacion)
+select id,
+  'Los productores medianos riegan "a ojo" y desperdician hasta 40% del agua.',
+  'Sensores de humedad de bajo costo conectados a una app que indica cuándo y cuánto regar.',
+  'Ahorro de agua y energía para productores medianos, con un equipo que se paga en una temporada.',
+  'Productores frutihortícolas de 10 a 200 hectáreas en Mendoza y San Juan.',
+  'Venta del kit de sensores + suscripción mensual por hectárea.',
+  'prototipo',
+  '3 pilotos en fincas de Maipú; 2 cartas de intención.',
+  'https://www.notion.so/agrosense'
+from proyectos where nombre = 'AgroSense';

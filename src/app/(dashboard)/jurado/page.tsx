@@ -10,7 +10,7 @@ export default async function Jurado() {
   const persona = await requireRol("jurado");
   const supabase = await createClient();
   const [proyectos, evaluaciones] = await Promise.all([
-    supabase.from("proyectos").select("id, nombre, descripcion, estado").in("estado", estadosEvaluables).order("nombre"),
+    supabase.from("proyectos").select("id, nombre, descripcion, estado, jurado_fichas(proyecto_id)").in("estado", estadosEvaluables).order("nombre"),
     supabase.from("jurado_evaluaciones").select("proyecto_id, jurado_puntajes(puntaje)").eq("jurado_id", persona.id),
   ]);
   if (proyectos.error) throw proyectos.error;
@@ -49,7 +49,7 @@ export default async function Jurado() {
       ) : (
         <Table>
           <TableHeader>
-            <TableRow><TableHead>Proyecto</TableHead><TableHead className="hidden sm:table-cell">Estado</TableHead><TableHead className="text-right">{esJurado ? "Tu promedio" : ""}</TableHead></TableRow>
+            <TableRow><TableHead>Proyecto</TableHead><TableHead className="hidden sm:table-cell">Estado</TableHead><TableHead>Ficha</TableHead><TableHead className="text-right">{esJurado ? "Tu promedio" : ""}</TableHead></TableRow>
           </TableHeader>
           <TableBody>
             {proyectos.data.map((p) => {
@@ -63,6 +63,13 @@ export default async function Jurado() {
                     </Link>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell"><Badge variant="outline" className="capitalize">{p.estado}</Badge></TableCell>
+                  <TableCell>
+                    {p.jurado_fichas
+                      ? <Link href={`/jurado/fichas/${p.id}`} className="text-sm underline underline-offset-4 hover:text-primary">Ver ficha</Link>
+                      : persona.rol === "admin"
+                        ? <Link href={`/jurado/fichas/${p.id}/editar`} className="text-sm text-[#666] underline underline-offset-4 hover:text-primary">Cargar ficha</Link>
+                        : <span className="text-sm text-[#666]">Sin ficha</span>}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Link href={`/jurado/evaluar/${p.id}`} className="hover:text-primary">
                       {!esJurado

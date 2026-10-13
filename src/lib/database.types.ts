@@ -77,6 +77,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"jurado_fichas": {
+                  Row: {
+                    "etapa": string | null,"link_presentacion": string | null,"mercado": string | null,"modelo_negocio": string | null,"problema": string | null,"propuesta_valor": string | null,"proyecto_id": string,"solucion": string | null,"traccion": string | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "etapa"?: string | null,"link_presentacion"?: string | null,"mercado"?: string | null,"modelo_negocio"?: string | null,"problema"?: string | null,"propuesta_valor"?: string | null,"proyecto_id": string,"solucion"?: string | null,"traccion"?: string | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "etapa"?: string | null,"link_presentacion"?: string | null,"mercado"?: string | null,"modelo_negocio"?: string | null,"problema"?: string | null,"propuesta_valor"?: string | null,"proyecto_id"?: string,"solucion"?: string | null,"traccion"?: string | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "jurado_fichas_proyecto_id_fkey"
+      columns: ["proyecto_id"]
+isOneToOne: true
+      referencedRelation: "proyectos"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"jurado_puntajes": {
                   Row: {
                     "criterio_id": string,"evaluacion_id": string,"puntaje": number
