@@ -72,3 +72,9 @@ select id,
   '3 pilotos en fincas de Maipú; 2 cartas de intención.',
   'https://www.notion.so/agrosense'
 from proyectos where nombre = 'AgroSense';
+
+-- GRUPO JURADO: una integrante para Reciclá, así el mail post-evento tiene contactos de todos los equipos.
+insert into personas (nombre, email, rol) values ('Carla Alumna', 'carla@alumnos.austral.edu.ar', 'alumno');
+insert into proyecto_integrantes
+  select p.id, pe.id from proyectos p, personas pe
+  where p.nombre = 'Reciclá' and pe.email = 'carla@alumnos.austral.edu.ar';

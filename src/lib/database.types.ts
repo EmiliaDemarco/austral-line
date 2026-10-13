@@ -51,6 +51,32 @@ export type Database = {
                   Relationships: [
                     
                   ]
+                },"jurado_envios": {
+                  Row: {
+                    "asunto": string,"created_at": string,"email": string,"error": string | null,"estado": string,"evento_id": string,"id": string,"persona_id": string | null,"programado_para": string | null,"resend_id": string | null,"tipo": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "asunto": string,"created_at"?: string,"email": string,"error"?: string | null,"estado": string,"evento_id": string,"id"?: string,"persona_id"?: string | null,"programado_para"?: string | null,"resend_id"?: string | null,"tipo": string
+                  }
+                  Update: {
+                    "asunto"?: string,"created_at"?: string,"email"?: string,"error"?: string | null,"estado"?: string,"evento_id"?: string,"id"?: string,"persona_id"?: string | null,"programado_para"?: string | null,"resend_id"?: string | null,"tipo"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "jurado_envios_evento_id_fkey"
+      columns: ["evento_id"]
+isOneToOne: false
+      referencedRelation: "eventos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "jurado_envios_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"jurado_evaluaciones": {
                   Row: {
                     "comentarios": string | null,"created_at": string,"id": string,"jurado_id": string,"propuesta_valor": string | null,"proyecto_id": string,"updated_at": string
@@ -94,6 +120,26 @@ isOneToOne: false
       columns: ["proyecto_id"]
 isOneToOne: true
       referencedRelation: "proyectos"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"jurado_material_post": {
+                  Row: {
+                    "evento_id": string,"foto_1": string | null,"foto_2": string | null,"foto_3": string | null,"mensaje": string | null,"updated_at": string,"video": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "evento_id": string,"foto_1"?: string | null,"foto_2"?: string | null,"foto_3"?: string | null,"mensaje"?: string | null,"updated_at"?: string,"video"?: string | null
+                  }
+                  Update: {
+                    "evento_id"?: string,"foto_1"?: string | null,"foto_2"?: string | null,"foto_3"?: string | null,"mensaje"?: string | null,"updated_at"?: string,"video"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "jurado_material_post_evento_id_fkey"
+      columns: ["evento_id"]
+isOneToOne: true
+      referencedRelation: "eventos"
       referencedColumns: ["id"]
     }
                   ]

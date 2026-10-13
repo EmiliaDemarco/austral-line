@@ -35,6 +35,11 @@ export default async function Jurado() {
           <Link href="/jurado/deliberacion" className="text-sm text-[#666] underline underline-offset-4 hover:text-primary">
             Tablero de deliberación
           </Link>
+          {!esJurado && (
+            <Link href="/jurado/comunicaciones" className="text-sm text-[#666] underline underline-offset-4 hover:text-primary">
+              Mails a jurados
+            </Link>
+          )}
           {esJurado && (
             <p className="text-right">
               <span className="font-serif text-3xl">{evaluados}/{proyectos.data.length}</span>
