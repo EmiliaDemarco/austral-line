@@ -4,9 +4,7 @@ import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-
-// Los borradores todavía no se presentan, así que no se evalúan.
-const estadosEvaluables = ["publicado", "finalista", "ganador"];
+import { estadosEvaluables } from "./_lib";
 
 export default async function Jurado() {
   const persona = await requireRol("jurado");
@@ -23,18 +21,25 @@ export default async function Jurado() {
     return [e.proyecto_id, puntajes.reduce((a, b) => a + b, 0) / (puntajes.length || 1)];
   }));
   const evaluados = proyectos.data.filter((p) => promedios.has(p.id)).length;
+  const esJurado = persona.rol === "jurado";
 
   return (
     <>
-      <div className="mb-8 flex items-end justify-between gap-4">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="font-serif text-2xl">Evaluar proyectos</h1>
-          <p className="mt-1 text-sm text-[#666]">Puntuá cada criterio de 1 a 10. Podés volver y ajustar tus notas hasta la deliberación.</p>
+          <h1 className="font-serif text-2xl">{esJurado ? "Evaluar proyectos" : "Proyectos a evaluar"}</h1>
+          <p className="mt-1 text-sm text-[#666]">
+            {esJurado
+              ? "Puntuá cada criterio de 1 a 10. Podés volver y ajustar tus notas hasta la deliberación."
+              : "Como administrador podés ver las planillas, pero las notas las cargan solo los jurados."}
+          </p>
         </div>
-        <p className="shrink-0 text-right">
-          <span className="font-serif text-3xl">{evaluados}/{proyectos.data.length}</span>
-          <span className="block text-xs text-[#666]">evaluados</span>
-        </p>
+        {esJurado && (
+          <p className="shrink-0 sm:text-right">
+            <span className="font-serif text-3xl">{evaluados}/{proyectos.data.length}</span>
+            <span className="block text-xs text-[#666]">evaluados</span>
+          </p>
+        )}
       </div>
 
       {proyectos.data.length === 0 ? (
@@ -42,7 +47,7 @@ export default async function Jurado() {
       ) : (
         <Table>
           <TableHeader>
-            <TableRow><TableHead>Proyecto</TableHead><TableHead>Estado</TableHead><TableHead className="text-right">Tu promedio</TableHead></TableRow>
+            <TableRow><TableHead>Proyecto</TableHead><TableHead className="hidden sm:table-cell">Estado</TableHead><TableHead className="text-right">{esJurado ? "Tu promedio" : ""}</TableHead></TableRow>
           </TableHeader>
           <TableBody>
             {proyectos.data.map((p) => {
@@ -52,13 +57,15 @@ export default async function Jurado() {
                   <TableCell>
                     <Link href={`/jurado/evaluar/${p.id}`} className="block py-2 hover:text-primary">
                       <span className="font-medium">{p.nombre}</span>
-                      {p.descripcion && <span className="block text-[#666]">{p.descripcion}</span>}
+                      {p.descripcion && <span className="hidden text-[#666] sm:block">{p.descripcion}</span>}
                     </Link>
                   </TableCell>
-                  <TableCell><Badge variant="outline" className="capitalize">{p.estado}</Badge></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Badge variant="outline" className="capitalize">{p.estado}</Badge></TableCell>
                   <TableCell className="text-right">
                     <Link href={`/jurado/evaluar/${p.id}`} className="hover:text-primary">
-                      {promedio === undefined
+                      {!esJurado
+                        ? <span className="text-sm text-[#666] underline underline-offset-4">Ver planilla</span>
+                        : promedio === undefined
                         ? <span className="text-sm text-[#666] underline underline-offset-4">Evaluar</span>
                         : <span className="font-serif text-xl">{promedio.toFixed(1)}</span>}
                     </Link>

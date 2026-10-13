@@ -35,7 +35,8 @@ create table jurado_puntajes (
   primary key (evaluacion_id, criterio_id)
 );
 
--- Permisos: el admin ve y edita todo; el jurado lee los criterios y carga solo sus propias evaluaciones.
+-- Permisos: el admin edita los criterios y ve todas las evaluaciones, pero no carga notas (eso es solo del jurado).
+-- El jurado lee los criterios y carga solo sus propias evaluaciones.
 alter table jurado_criterios enable row level security;
 create policy "admin todo" on jurado_criterios for all to authenticated
   using (mi_rol() = 'admin') with check (mi_rol() = 'admin');
@@ -43,15 +44,17 @@ create policy "jurado lee" on jurado_criterios for select to authenticated
   using (mi_rol() = 'jurado');
 
 alter table jurado_evaluaciones enable row level security;
-create policy "admin todo" on jurado_evaluaciones for all to authenticated
-  using (mi_rol() = 'admin') with check (mi_rol() = 'admin');
+create policy "admin lee" on jurado_evaluaciones for select to authenticated
+  using (mi_rol() = 'admin');
+-- Los borradores todavía no se presentan: no se pueden evaluar.
 create policy "jurado lo suyo" on jurado_evaluaciones for all to authenticated
   using (mi_rol() = 'jurado' and jurado_id = (select id from personas where email = auth.jwt() ->> 'email'))
-  with check (mi_rol() = 'jurado' and jurado_id = (select id from personas where email = auth.jwt() ->> 'email'));
+  with check (mi_rol() = 'jurado' and jurado_id = (select id from personas where email = auth.jwt() ->> 'email')
+    and proyecto_id in (select id from proyectos where estado in ('publicado', 'finalista', 'ganador')));
 
 alter table jurado_puntajes enable row level security;
-create policy "admin todo" on jurado_puntajes for all to authenticated
-  using (mi_rol() = 'admin') with check (mi_rol() = 'admin');
+create policy "admin lee" on jurado_puntajes for select to authenticated
+  using (mi_rol() = 'admin');
 create policy "jurado lo suyo" on jurado_puntajes for all to authenticated
   using (mi_rol() = 'jurado' and evaluacion_id in (
     select id from jurado_evaluaciones where jurado_id = (select id from personas where email = auth.jwt() ->> 'email')))
