@@ -10,18 +10,20 @@ export default async function CompanerosAfines() {
   const persona = await requireRol("alumno");
   const supabase = await createClient();
 
-  const [perfiles, maestro, respuestas, integrantes] = await Promise.all([
-    supabase.from("alumnos_perfiles").select("persona_id, carrera, sobre_mi, busca_equipo, personas(nombre, email)"),
+  const [perfiles, maestro, respuestas, integrantes, carreras] = await Promise.all([
+    supabase.from("alumnos_perfiles").select("persona_id, sobre_mi, busca_equipo, personas(nombre, email)"),
     supabase.from("alumnos_intereses_maestro").select("id, nombre"),
     supabase.from("alumnos_intereses").select("persona_id, interes_id, estrellas"),
     supabase.from("proyecto_integrantes").select("persona_id, proyectos(nombre)"),
+    supabase.from("alumnos_carreras").select("persona_id, alumnos_carreras_maestro(nombre)"),
   ]);
-  for (const r of [perfiles, maestro, respuestas, integrantes]) if (r.error) throw r.error;
+  for (const r of [perfiles, maestro, respuestas, integrantes, carreras]) if (r.error) throw r.error;
 
   // RLS ya limita lo que llega: mi perfil y los de quienes buscan equipo.
   const miPerfil = perfiles.data!.find((p) => p.persona_id === persona.id);
   const otros = perfiles.data!.filter((p) => p.persona_id !== persona.id && p.busca_equipo);
   const nombreTema = new Map(maestro.data!.map((m) => [m.id, m.nombre]));
+  const carreraDe = new Map(carreras.data!.map((c) => [c.persona_id, c.alumnos_carreras_maestro.nombre]));
   const estrellasDe = (id: string) =>
     new Map(respuestas.data!.filter((r) => r.persona_id === id).map((r) => [r.interes_id, r.estrellas]));
 
@@ -38,11 +40,11 @@ export default async function CompanerosAfines() {
   }
 
   const proyectoDe = new Map(integrantes.data!.map((i) => [i.persona_id, i.proyectos.nombre]));
-  const yo = { carrera: miPerfil.carrera, estrellas: estrellasDe(persona.id) };
+  const yo = { carrera: carreraDe.get(persona.id) ?? "", estrellas: estrellasDe(persona.id) };
   const sugerencias = otros
     .map((o) => ({
       ...o,
-      afinidad: calcularAfinidad(yo, { carrera: o.carrera, estrellas: estrellasDe(o.persona_id) }, (id) => nombreTema.get(id) ?? "?"),
+      afinidad: calcularAfinidad(yo, { carrera: carreraDe.get(o.persona_id) ?? "", estrellas: estrellasDe(o.persona_id) }, (id) => nombreTema.get(id) ?? "?"),
     }))
     .sort((a, b) => b.afinidad.puntaje - a.afinidad.puntaje);
 
@@ -71,7 +73,7 @@ export default async function CompanerosAfines() {
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="font-serif text-xl">{s.personas.nombre}</p>
-                  <p className="text-sm text-[#666]">{s.carrera}</p>
+                  <p className="text-sm text-[#666]">{carreraDe.get(s.persona_id)}</p>
                 </div>
                 <Badge variant={s.afinidad.nivel === "Muy afín" ? "default" : "outline"}>{s.afinidad.nivel}</Badge>
               </div>

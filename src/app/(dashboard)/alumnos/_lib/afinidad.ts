@@ -25,7 +25,8 @@ export function calcularAfinidad(
       choques.push(nombreTema(id));
     }
   }
-  const otraCarrera = yo.carrera.trim().toLowerCase() !== otro.carrera.trim().toLowerCase();
+  const [mia, suya] = [yo.carrera.trim().toLowerCase(), otro.carrera.trim().toLowerCase()];
+  const otraCarrera = mia !== "" && suya !== "" && mia !== suya;
   const puntaje =
     enComun.length * PUNTOS.temaEnComun + (otraCarrera ? PUNTOS.otraCarrera : 0) - choques.length * PUNTOS.choque;
 

@@ -6,7 +6,6 @@ import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { CARRERAS } from "../_lib/catalogo";
 import { Estrellas } from "../_components/estrellas";
 
 const MINIMO_CALIFICADOS = 4;
@@ -18,10 +17,13 @@ async function guardarPerfil(formData: FormData) {
   const persona = await requireRol("alumno");
   const supabase = await createClient();
 
-  // La carrera se elige una sola vez: si ya hay perfil, se mantiene la guardada (la base además lo impide).
-  const { data: existente } = await supabase.from("alumnos_perfiles").select("carrera").eq("persona_id", persona.id).maybeSingle();
-  const carrera = existente?.carrera ?? String(formData.get("carrera") ?? "");
-  if (!existente && !(CARRERAS as readonly string[]).includes(carrera)) volverCon("Elegí tu carrera de la lista.");
+  // La carrera se elige una sola vez: si ya la eligió, no se vuelve a tocar (la base además no lo permite).
+  const { data: carreraActual } = await supabase.from("alumnos_carreras").select("carrera_id").eq("persona_id", persona.id).maybeSingle();
+  const carreraElegida = Number(formData.get("carrera_id") ?? 0);
+  if (!carreraActual) {
+    const { data: valida } = await supabase.from("alumnos_carreras_maestro").select("id").eq("id", carreraElegida).eq("activo", true).maybeSingle();
+    if (!valida) volverCon("Elegí tu carrera de la lista.");
+  }
 
   const { data: maestro, error: errorMaestro } = await supabase.from("alumnos_intereses_maestro").select("id").eq("activo", true);
   if (errorMaestro) volverCon(`No se pudo leer el listado de intereses: ${errorMaestro.message}`);
@@ -35,9 +37,13 @@ async function guardarPerfil(formData: FormData) {
   }
 
   const ahora = new Date().toISOString();
+  if (!carreraActual) {
+    const { error } = await supabase.from("alumnos_carreras").insert({ persona_id: persona.id, carrera_id: carreraElegida });
+    if (error) volverCon(`No se pudo guardar la carrera: ${error.message}`);
+  }
+
   const { error: errorPerfil } = await supabase.from("alumnos_perfiles").upsert({
     persona_id: persona.id,
-    carrera,
     sobre_mi: String(formData.get("sobre_mi") ?? "").trim() || null,
     busca_equipo: formData.get("busca_equipo") === "on",
     updated_at: ahora,
@@ -68,14 +74,20 @@ async function Aviso({ searchParams }: Pick<PageProps<"/alumnos/perfil">, "searc
 export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/perfil">) {
   const persona = await requireRol("alumno");
   const supabase = await createClient();
-  const [{ data: perfil, error: e1 }, { data: maestro, error: e2 }, { data: misIntereses, error: e3 }] = await Promise.all([
+  const [
+    { data: perfil, error: e1 },
+    { data: maestro, error: e2 },
+    { data: misIntereses, error: e3 },
+    { data: miCarrera, error: e4 },
+    { data: carreras, error: e5 },
+  ] = await Promise.all([
     supabase.from("alumnos_perfiles").select("*").eq("persona_id", persona.id).maybeSingle(),
     supabase.from("alumnos_intereses_maestro").select("id, nombre").eq("activo", true).order("orden").order("nombre"),
     supabase.from("alumnos_intereses").select("interes_id, estrellas").eq("persona_id", persona.id),
+    supabase.from("alumnos_carreras").select("alumnos_carreras_maestro(nombre)").eq("persona_id", persona.id).maybeSingle(),
+    supabase.from("alumnos_carreras_maestro").select("id, nombre").eq("activo", true).order("orden").order("nombre"),
   ]);
-  if (e1) throw e1;
-  if (e2) throw e2;
-  if (e3) throw e3;
+  for (const e of [e1, e2, e3, e4, e5]) if (e) throw e;
 
   const estrellasDe = new Map(misIntereses.map((i) => [i.interes_id, i.estrellas]));
 
@@ -90,17 +102,17 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
       <form action={guardarPerfil} className="grid max-w-3xl gap-10">
         <section className="grid gap-4 border bg-card p-6">
           <h2 className="font-serif text-lg">Carrera</h2>
-          {perfil ? (
+          {miCarrera ? (
             <div className="grid gap-1">
-              <p className="font-serif text-xl">{perfil.carrera}</p>
+              <p className="font-serif text-xl">{miCarrera.alumnos_carreras_maestro.nombre}</p>
               <p className="text-sm text-[#666]">La carrera queda fija una vez guardada. Si te equivocaste, pedile a los profesores que la corrijan.</p>
             </div>
           ) : (
             <div className="grid max-w-sm gap-2">
-              <Label htmlFor="carrera">¿Qué estudiás?</Label>
-              <select id="carrera" name="carrera" required defaultValue="" className="h-8 border bg-background px-2 text-sm">
+              <Label htmlFor="carrera_id">¿Qué estudiás?</Label>
+              <select id="carrera_id" name="carrera_id" required defaultValue="" className="h-8 border bg-background px-2 text-sm">
                 <option value="" disabled>Elegí una carrera</option>
-                {CARRERAS.map((c) => <option key={c} value={c}>{c}</option>)}
+                {carreras.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
               </select>
               <p className="text-sm text-[#666]">Elegila bien: una vez guardada no se puede cambiar.</p>
             </div>

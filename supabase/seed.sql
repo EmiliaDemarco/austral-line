@@ -46,14 +46,25 @@ insert into personas (nombre, email, rol) values
 select pg_temp.crear_login(email) from personas
   where email in ('carla@alumnos.austral.edu.ar', 'diego@alumnos.austral.edu.ar', 'elena@alumnos.austral.edu.ar');
 
-insert into alumnos_perfiles (persona_id, carrera, sobre_mi, busca_equipo)
-select pe.id, v.carrera, v.sobre_mi, v.busca_equipo
+insert into alumnos_perfiles (persona_id, sobre_mi, busca_equipo)
+select pe.id, v.sobre_mi, v.busca_equipo
 from personas pe join (values
-  ('carla@alumnos.austral.edu.ar', 'Marketing', 'Me interesa mejorar el acceso a la salud en el interior.', true),
-  ('diego@alumnos.austral.edu.ar', 'Agronegocios', 'Vengo de una familia de productores, me gustaría algo de agro.', true),
-  ('elena@alumnos.austral.edu.ar', 'Administración de Empresas', null, true),
-  ('bruno@alumnos.austral.edu.ar', 'Negocios Digitales', 'Ya estoy en Tutorly.', false)
-) as v(email, carrera, sobre_mi, busca_equipo) on v.email = pe.email;
+  ('carla@alumnos.austral.edu.ar', 'Me interesa mejorar el acceso a la salud en el interior.', true),
+  ('diego@alumnos.austral.edu.ar', 'Vengo de una familia de productores, me gustaría algo de agro.', true),
+  ('elena@alumnos.austral.edu.ar', null, true),
+  ('bruno@alumnos.austral.edu.ar', 'Ya estoy en Tutorly.', false)
+) as v(email, sobre_mi, busca_equipo) on v.email = pe.email;
+
+insert into alumnos_carreras (persona_id, carrera_id)
+select pe.id, m.id
+from (values
+  ('carla@alumnos.austral.edu.ar', 'Marketing'),
+  ('diego@alumnos.austral.edu.ar', 'Agronegocios'),
+  ('elena@alumnos.austral.edu.ar', 'Administración de Empresas'),
+  ('bruno@alumnos.austral.edu.ar', 'Negocios Digitales')
+) as v(email, carrera)
+join personas pe on pe.email = v.email
+join alumnos_carreras_maestro m on m.nombre = v.carrera;
 
 -- Cuánto le interesa a cada uno cada tema (1 a 5 estrellas).
 insert into alumnos_intereses (persona_id, interes_id, estrellas)

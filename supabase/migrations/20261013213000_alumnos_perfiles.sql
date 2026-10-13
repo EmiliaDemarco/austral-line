@@ -1,11 +1,10 @@
 -- GRUPO ALUMNOS: perfil de cada alumno para el armado de equipos.
--- Carrera (para la interdisciplinariedad), si quiere aparecer como "busco equipo",
--- y cuánto le interesa cada tema del maestro de intereses (1 a 5 estrellas).
+-- Carrera (del maestro de carreras, fija una vez elegida), si quiere aparecer como
+-- "busco equipo", y cuánto le interesa cada tema del maestro de intereses (1 a 5 estrellas).
 
 -- Perfil -----------------------------------------------------------------------
 create table alumnos_perfiles (
   persona_id uuid primary key references personas(id) on delete cascade,
-  carrera text not null,
   sobre_mi text,
   busca_equipo boolean not null default false,
   updated_at timestamptz not null default now()
@@ -28,6 +27,58 @@ create policy "alumno crea lo suyo" on alumnos_perfiles for insert to authentica
   with check (mi_rol() = 'alumno' and persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email')));
 create policy "alumno edita lo suyo" on alumnos_perfiles for update to authenticated
   using (mi_rol() = 'alumno' and persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email')))
+  with check (mi_rol() = 'alumno' and persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email')));
+
+-- Maestro de carreras -------------------------------------------------------------
+-- Carreras que cursan el taller. Lo lee cualquiera con rol; solo el admin lo modifica.
+create table alumnos_carreras_maestro (
+  id smallint generated always as identity primary key,
+  nombre text not null unique,
+  orden smallint not null default 0,
+  activo boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+alter table alumnos_carreras_maestro enable row level security;
+
+create policy "leer con rol" on alumnos_carreras_maestro for select to authenticated
+  using (mi_rol() is not null);
+create policy "admin escribe" on alumnos_carreras_maestro for all to authenticated
+  using (mi_rol() = 'admin') with check (mi_rol() = 'admin');
+
+insert into alumnos_carreras_maestro (nombre, orden) values
+  ('Administración de Empresas', 1),
+  ('Negocios Digitales', 2),
+  ('Economía Empresarial', 3),
+  ('Agronegocios', 4),
+  ('Marketing', 5);
+
+-- Carrera de cada alumno -------------------------------------------------------------
+-- Una por alumno. El alumno la elige UNA vez (no tiene permiso para cambiarla ni borrarla);
+-- solo el admin (los profesores) la corrige.
+create table alumnos_carreras (
+  persona_id uuid primary key references personas(id) on delete cascade,
+  carrera_id smallint not null references alumnos_carreras_maestro(id),
+  created_at timestamptz not null default now()
+);
+
+alter table alumnos_carreras enable row level security;
+
+create policy "admin todo" on alumnos_carreras for all to authenticated
+  using (mi_rol() = 'admin') with check (mi_rol() = 'admin');
+
+-- El alumno ve su carrera y la de quienes buscan equipo (para la interdisciplinariedad).
+create policy "alumno ve lo suyo y quienes buscan equipo" on alumnos_carreras for select to authenticated
+  using (
+    mi_rol() = 'alumno'
+    and (
+      persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email'))
+      or exists (select 1 from alumnos_perfiles p where p.persona_id = alumnos_carreras.persona_id and p.busca_equipo)
+    )
+  );
+
+-- El alumno solo carga la suya, y solo una vez (sin políticas de update ni delete para alumnos).
+create policy "alumno elige la suya" on alumnos_carreras for insert to authenticated
   with check (mi_rol() = 'alumno' and persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email')));
 
 -- Maestro de intereses -----------------------------------------------------------
@@ -91,19 +142,6 @@ create policy "alumno ve lo suyo y quienes buscan equipo" on alumnos_intereses f
 create policy "alumno gestiona lo suyo" on alumnos_intereses for all to authenticated
   using (mi_rol() = 'alumno' and persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email')))
   with check (mi_rol() = 'alumno' and persona_id = (select id from personas where lower(email) = lower(auth.jwt() ->> 'email')));
-
--- La carrera es fija una vez cargada: solo el admin puede corregirla. ------------
-create function public.alumnos_carrera_inmutable() returns trigger
-language plpgsql set search_path = '' as $$
-begin
-  if new.carrera is distinct from old.carrera and public.mi_rol() is distinct from 'admin' then
-    raise exception 'La carrera no se puede cambiar. Pedile a los profesores que la corrijan.';
-  end if;
-  return new;
-end $$;
-
-create trigger carrera_inmutable before update on alumnos_perfiles
-  for each row execute function public.alumnos_carrera_inmutable();
 
 -- Historial de cambios de intereses ------------------------------------------------
 -- Se completa solo (trigger): queda registro de cada vez que un alumno califica,
