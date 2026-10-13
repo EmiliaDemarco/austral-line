@@ -49,12 +49,12 @@ select pg_temp.crear_login(email) from personas
 insert into alumnos_perfiles (persona_id, carrera, intereses, no_intereses, sobre_mi, busca_equipo)
 select pe.id, v.carrera, v.intereses, v.no_intereses, v.sobre_mi, v.busca_equipo
 from personas pe join (values
-  ('carla@alumnos.austral.edu.ar', 'Medicina', array['Salud', 'Impacto social'], array['Finanzas y fintech'],
+  ('carla@alumnos.austral.edu.ar', 'Marketing', array['Salud', 'Impacto social'], array['Finanzas y fintech'],
     'Me interesa mejorar el acceso a la salud en el interior.', true),
-  ('diego@alumnos.austral.edu.ar', 'Ingeniería Industrial', array['Agro y alimentos', 'Sustentabilidad y ambiente'], array['Moda y diseño'],
+  ('diego@alumnos.austral.edu.ar', 'Agronegocios', array['Agro y alimentos', 'Sustentabilidad y ambiente'], array['Moda y diseño'],
     'Vengo de una familia de productores, me gustaría algo de agro.', true),
   ('elena@alumnos.austral.edu.ar', 'Administración de Empresas', array['Agro y alimentos', 'Finanzas y fintech'], array['Salud'],
     null, true),
-  ('bruno@alumnos.austral.edu.ar', 'Ingeniería Informática', array['Educación', 'Tecnología y software'], array[]::text[],
+  ('bruno@alumnos.austral.edu.ar', 'Negocios Digitales', array['Educación', 'Tecnología y software'], array[]::text[],
     'Ya estoy en Tutorly.', false)
 ) as v(email, carrera, intereses, no_intereses, sobre_mi, busca_equipo) on v.email = pe.email;

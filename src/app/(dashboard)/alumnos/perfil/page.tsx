@@ -6,8 +6,7 @@ import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { CARRERAS, OTRA_CARRERA, TEMAS } from "../_lib/catalogo";
+import { CARRERAS, TEMAS } from "../_lib/catalogo";
 
 const OPCIONES = [
   { valor: "si", label: "Me interesa" },
@@ -19,10 +18,10 @@ async function guardarPerfil(formData: FormData) {
   "use server";
   const persona = await requireRol("alumno");
 
-  const elegida = String(formData.get("carrera") ?? "");
-  const otra = String(formData.get("carrera_otra") ?? "").trim();
-  const carrera = elegida === OTRA_CARRERA ? otra : elegida;
-  if (!carrera) redirect(`/alumnos/perfil?error=${encodeURIComponent("Elegí tu carrera (o escribila si es “Otra”).")}`);
+  const carrera = String(formData.get("carrera") ?? "");
+  if (!(CARRERAS as readonly string[]).includes(carrera)) {
+    redirect(`/alumnos/perfil?error=${encodeURIComponent("Elegí tu carrera de la lista.")}`);
+  }
 
   const intereses = TEMAS.filter((_, i) => formData.get(`tema_${i}`) === "si");
   const no_intereses = TEMAS.filter((_, i) => formData.get(`tema_${i}`) === "no");
@@ -61,7 +60,7 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
     .maybeSingle();
   if (error) throw error;
 
-  const carreraEnLista = !perfil || (CARRERAS as readonly string[]).includes(perfil.carrera);
+  const carreraGuardada = perfil && (CARRERAS as readonly string[]).includes(perfil.carrera) ? perfil.carrera : "";
   const valorTema = (tema: string) =>
     perfil?.intereses.includes(tema) ? "si" : perfil?.no_intereses.includes(tema) ? "no" : "neutral";
 
@@ -76,25 +75,18 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
       <form action={guardarPerfil} className="grid max-w-3xl gap-10">
         <section className="grid gap-4 border bg-card p-6">
           <h2 className="font-serif text-lg">Carrera</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="carrera">¿Qué estudiás?</Label>
-              <select
-                id="carrera"
-                name="carrera"
-                required
-                defaultValue={perfil ? (carreraEnLista ? perfil.carrera : OTRA_CARRERA) : ""}
-                className="h-8 border bg-background px-2 text-sm"
-              >
-                <option value="" disabled>Elegí una carrera</option>
-                {CARRERAS.map((c) => <option key={c} value={c}>{c}</option>)}
-                <option value={OTRA_CARRERA}>{OTRA_CARRERA}</option>
-              </select>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="carrera_otra">Si elegiste “Otra”, ¿cuál?</Label>
-              <Input id="carrera_otra" name="carrera_otra" defaultValue={carreraEnLista ? "" : perfil?.carrera} />
-            </div>
+          <div className="grid max-w-sm gap-2">
+            <Label htmlFor="carrera">¿Qué estudiás?</Label>
+            <select
+              id="carrera"
+              name="carrera"
+              required
+              defaultValue={carreraGuardada}
+              className="h-8 border bg-background px-2 text-sm"
+            >
+              <option value="" disabled>Elegí una carrera</option>
+              {CARRERAS.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>
           </div>
         </section>
 

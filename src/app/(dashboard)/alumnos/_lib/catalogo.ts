@@ -1,24 +1,13 @@
 // GRUPO ALUMNOS — listas que usa el perfil. Editarlas acá alcanza para cambiar las opciones.
 
+// Carreras que cursan el taller de Emprendimientos.
 export const CARRERAS = [
   "Administración de Empresas",
-  "Contador Público",
-  "Economía",
-  "Ingeniería Industrial",
-  "Ingeniería Informática",
-  "Ingeniería Biomédica",
-  "Ingeniería Mecánica",
-  "Comunicación",
-  "Derecho",
-  "Medicina",
-  "Enfermería",
-  "Nutrición",
-  "Psicología",
-  "Ciencias Políticas",
-  "Diseño",
+  "Negocios Digitales",
+  "Economía Empresarial",
+  "Agronegocios",
+  "Marketing",
 ] as const;
-
-export const OTRA_CARRERA = "Otra";
 
 export const TEMAS = [
   "Salud",
