@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { estadosEvaluables } from "../../_lib";
+import { FichaProyecto } from "../../_components/ficha-proyecto";
 
 const escala = Array.from({ length: 10 }, (_, i) => i + 1);
 
@@ -61,7 +62,7 @@ export default async function EvaluarProyecto({ params }: PageProps<"/jurado/eva
 
   const { data: proyecto, error } = await supabase
     .from("proyectos")
-    .select("id, nombre, descripcion, estado, proyecto_integrantes(personas(nombre))")
+    .select("id, nombre, descripcion, estado, proyecto_integrantes(personas(nombre)), jurado_fichas(*)")
     .eq("id", proyectoId)
     .maybeSingle();
   if (error?.code === "22P02") notFound(); // id con formato inválido
@@ -106,6 +107,15 @@ export default async function EvaluarProyecto({ params }: PageProps<"/jurado/eva
         <h1 className="font-serif text-3xl">{proyecto.nombre}</h1>
         {proyecto.descripcion && <p className="mt-2 text-[#666]">{proyecto.descripcion}</p>}
         {integrantes.length > 0 && <p className="mt-4 text-sm text-[#666]">Equipo: {integrantes.join(", ")}</p>}
+        {proyecto.jurado_fichas && (
+          <details className="group mt-6 border bg-card">
+            <summary className="cursor-pointer list-none px-5 py-3 text-sm text-[#666] hover:text-primary">
+              <span className="group-open:hidden">Ver ficha del proyecto</span>
+              <span className="hidden group-open:inline">Ocultar ficha</span>
+            </summary>
+            <div className="border-t px-5 py-5"><FichaProyecto ficha={proyecto.jurado_fichas} /></div>
+          </details>
+        )}
       </header>
 
       {soloLectura && (
