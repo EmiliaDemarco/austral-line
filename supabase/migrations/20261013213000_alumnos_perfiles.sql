@@ -97,7 +97,7 @@ create function public.alumnos_carrera_inmutable() returns trigger
 language plpgsql set search_path = '' as $$
 begin
   if new.carrera is distinct from old.carrera and public.mi_rol() is distinct from 'admin' then
-    raise exception 'La carrera no se puede cambiar. Pedile al admin que la corrija.';
+    raise exception 'La carrera no se puede cambiar. Pedile a los profesores que la corrijan.';
   end if;
   return new;
 end $$;

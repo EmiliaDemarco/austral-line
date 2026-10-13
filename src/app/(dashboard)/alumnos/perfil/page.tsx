@@ -93,7 +93,7 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
           {perfil ? (
             <div className="grid gap-1">
               <p className="font-serif text-xl">{perfil.carrera}</p>
-              <p className="text-sm text-[#666]">La carrera queda fija una vez guardada. Si te equivocaste, pedile al admin que la corrija.</p>
+              <p className="text-sm text-[#666]">La carrera queda fija una vez guardada. Si te equivocaste, pedile a los profesores que la corrijan.</p>
             </div>
           ) : (
             <div className="grid max-w-sm gap-2">
