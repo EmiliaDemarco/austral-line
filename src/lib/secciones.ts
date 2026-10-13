@@ -3,11 +3,12 @@ import type { Database } from "@/lib/database.types";
 
 export type Rol = Database["public"]["Enums"]["rol"];
 
+// El orden es el del selector en Miembros: alumno primero para no crear admins sin querer.
 export const roles: Record<Rol, string> = {
-  admin: "Administrador",
   alumno: "Alumno",
   mentor: "Mentor",
   jurado: "Jurado",
+  admin: "Administrador",
 };
 
 // Menú del dashboard. `roles` = quién ve la sección (el admin ve todo).
