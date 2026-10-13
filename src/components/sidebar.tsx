@@ -5,24 +5,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { CalendarDays, Gavel, GraduationCap, Handshake, LayoutGrid } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// Para agregar una sección: sumala acá y creá la carpeta en src/app/(dashboard)/
-export const secciones = [
-  { href: "/", label: "Inicio", icon: LayoutGrid },
-  { href: "/alumnos", label: "Alumnos y proyectos", icon: GraduationCap },
-  { href: "/mentores", label: "Mentores", icon: Handshake },
-  { href: "/jurado", label: "Jurado", icon: Gavel },
-  { href: "/austral", label: "Austral", icon: CalendarDays },
-];
+import { puedeVer, secciones, type Rol } from "@/lib/secciones";
 
 export function useSeccionActiva() {
   const pathname = usePathname();
   return (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 }
 
-export function Sidebar({ footer }: { footer: React.ReactNode }) {
+export function Sidebar({ rol, footer }: { rol?: Rol; footer: React.ReactNode }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const isActive = useSeccionActiva();
 
@@ -41,7 +32,7 @@ export function Sidebar({ footer }: { footer: React.ReactNode }) {
       </div>
 
       <nav className="mt-4 flex flex-1 flex-col gap-2">
-        {secciones.map(({ href, label, icon: Icon }) => (
+        {secciones.filter((s) => puedeVer(rol, s.roles)).map(({ href, label, icon: Icon }) => (
           <Link key={href} href={href} className="group relative h-[40px]">
             <div
               className={cn(
@@ -73,11 +64,11 @@ export function Sidebar({ footer }: { footer: React.ReactNode }) {
   );
 }
 
-export function MobileNav() {
+export function MobileNav({ rol }: { rol?: Rol }) {
   const isActive = useSeccionActiva();
   return (
     <nav className="flex gap-4 overflow-x-auto md:hidden">
-      {secciones.map(({ href, label }) => (
+      {secciones.filter((s) => puedeVer(rol, s.roles)).map(({ href, label }) => (
         <Link key={href} href={href} className={cn("whitespace-nowrap text-sm text-[#666]", isActive(href) && "text-primary")}>
           {label}
         </Link>

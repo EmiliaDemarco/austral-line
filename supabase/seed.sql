@@ -1,16 +1,21 @@
--- Solo corre en local / preview branches. Admin de prueba: admin@austral.edu.ar / austral123
-insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
-  raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
-  confirmation_token, recovery_token, email_change, email_change_token_new)
-values ('00000000-0000-0000-0000-000000000000', '11111111-1111-1111-1111-111111111111',
-  'authenticated', 'authenticated', 'admin@austral.edu.ar', crypt('austral123', gen_salt('bf')), now(),
-  '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '');
-
-insert into auth.identities (id, user_id, provider_id, identity_data, provider, created_at, updated_at)
-values (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111',
-  '{"sub":"11111111-1111-1111-1111-111111111111","email":"admin@austral.edu.ar"}', 'email', now(), now());
+-- Solo corre en local. Un login de prueba por rol, todos con contraseña austral123:
+-- admin@austral.edu.ar · ana@alumnos.austral.edu.ar · marta@empresa.com · julio@empresa.com
+create function pg_temp.crear_login(mail text) returns void language sql as $$
+  with u as (
+    insert into auth.users (instance_id, id, aud, role, email, encrypted_password, email_confirmed_at,
+      raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
+      confirmation_token, recovery_token, email_change, email_change_token_new)
+    values ('00000000-0000-0000-0000-000000000000', gen_random_uuid(), 'authenticated', 'authenticated',
+      mail, crypt('austral123', gen_salt('bf')), now(),
+      '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '')
+    returning id, email
+  )
+  insert into auth.identities (id, user_id, provider_id, identity_data, provider, created_at, updated_at)
+  select gen_random_uuid(), id, id, jsonb_build_object('sub', id, 'email', email), 'email', now(), now() from u;
+$$;
 
 insert into personas (nombre, email, rol) values
+  ('Admin Austral', 'admin@austral.edu.ar', 'admin'),
   ('Ana Alumna', 'ana@alumnos.austral.edu.ar', 'alumno'),
   ('Bruno Alumno', 'bruno@alumnos.austral.edu.ar', 'alumno'),
   ('Marta Mentora', 'marta@empresa.com', 'mentor'),
@@ -27,3 +32,6 @@ insert into proyecto_integrantes
 insert into eventos (nombre, tipo, inicio, lugar) values
   ('Kickoff', 'presentacion', now() + interval '7 days', 'Aula Magna'),
   ('Demo Day', 'final', now() + interval '60 days', 'Auditorio');
+
+select pg_temp.crear_login(email) from personas
+  where email in ('admin@austral.edu.ar', 'ana@alumnos.austral.edu.ar', 'marta@empresa.com', 'julio@empresa.com');

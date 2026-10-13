@@ -97,10 +97,12 @@ isOneToOne: false
             [_ in never]: never
           }
           Functions: {
-            [_ in never]: never
+            "mi_rol":
+{ Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["rol"]
+                           }
           }
           Enums: {
-            "rol": "alumno"|"mentor"|"jurado"|"staff"
+            "rol": "alumno"|"mentor"|"jurado"|"admin"
           }
           CompositeTypes: {
             [_ in never]: never
@@ -220,7 +222,7 @@ export const Constants = {
           }
         },"public": {
           Enums: {
-            "rol": ["alumno", "mentor", "jurado", "staff"]
+            "rol": ["alumno", "mentor", "jurado", "admin"]
           }
         }
 } as const

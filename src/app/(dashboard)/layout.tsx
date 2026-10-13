@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUsuario } from "@/lib/auth";
+import { roles } from "@/lib/secciones";
 import { MobileNav, Sidebar } from "@/components/sidebar";
 
 async function logout() {
@@ -10,10 +12,19 @@ async function logout() {
   redirect("/login");
 }
 
+async function Menu({ salir }: { salir: React.ReactNode }) {
+  const { persona } = await getUsuario();
+  return <Sidebar rol={persona?.rol} footer={salir} />;
+}
+
+async function MenuMobile() {
+  const { persona } = await getUsuario();
+  return <MobileNav rol={persona?.rol} />;
+}
+
 async function UsuarioActual() {
-  const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  return data?.claims.email;
+  const { email, persona } = await getUsuario();
+  return persona ? `${persona.nombre} · ${roles[persona.rol]}` : email;
 }
 
 // Layout del dashboard al estilo Midday: rail de 70px + header de 70px + contenido px-8.
@@ -27,10 +38,10 @@ export default function DashboardLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="relative">
-      <Sidebar footer={salir} />
+      <Suspense><Menu salir={salir} /></Suspense>
       <div className="pb-4 md:ml-[70px]">
         <header className="flex h-[70px] items-center justify-between gap-4 border-b px-4 md:px-8">
-          <MobileNav />
+          <Suspense><MenuMobile /></Suspense>
           <span className="ml-auto truncate text-sm text-[#666]"><Suspense><UsuarioActual /></Suspense></span>
         </header>
         <main className="px-4 py-6 md:px-8">
