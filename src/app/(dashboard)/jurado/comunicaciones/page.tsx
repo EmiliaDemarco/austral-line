@@ -199,7 +199,7 @@ export default async function Comunicaciones({ searchParams }: PageProps<"/jurad
               <div className="flex flex-wrap gap-3">
                 <Button type="submit" size="lg" formAction={programarPostEvento} disabled={yaHayPost && faltanPost.length === 0}>
                   {yaHayPost && faltanPost.length > 0
-                    ? `Mandar a ${faltanPost.length === 1 ? "el jurado que falta" : `los ${faltanPost.length} jurados que faltan`}`
+                    ? `Mandar ${faltanPost.length === 1 ? "al jurado que falta" : `a los ${faltanPost.length} jurados que faltan`}`
                     : ahoraMs > ventana.desde.getTime() ? "Mandar mail post-evento ahora" : "Programar mail post-evento"}
                 </Button>
                 <Button type="submit" variant="outline" size="lg" formAction={enviarPrueba}>Mandarme una prueba</Button>
