@@ -13,7 +13,7 @@ import { fechaHora } from "../comunicaciones/plantillas";
 import { borrarSalon, crearSalon, guardarAsignaciones, renombrarSalon } from "./acciones";
 import { BotonConfirmar } from "./boton-confirmar";
 
-const selectClase = "h-9 w-full min-w-40 border bg-background px-2 text-sm";
+const selectClase = "h-9 w-full min-w-32 border bg-background px-2 text-sm";
 const cantidad = (n: number, singular: string, plural: string) => `${n} ${n === 1 ? singular : plural}`;
 
 export default async function Salones({ searchParams }: PageProps<"/jurado/salones">) {
@@ -49,8 +49,8 @@ export default async function Salones({ searchParams }: PageProps<"/jurado/salon
     supabase.from("jurado_salones").select("id, nombre").eq("evento_id", evento.id).order("orden"),
     supabase.from("proyectos").select("id, nombre, estado").in("estado", estadosEvaluables).order("nombre"),
     supabase.from("personas").select("id, nombre").eq("rol", "jurado").order("nombre"),
-    supabase.from("jurado_salon_proyectos").select("salon_id, proyecto_id").eq("evento_id", evento.id),
-    supabase.from("jurado_salon_jurados").select("salon_id, jurado_id").eq("evento_id", evento.id),
+    supabase.from("jurado_salon_proyectos").select("salon_id, proyecto_id, proyectos(nombre, estado)").eq("evento_id", evento.id),
+    supabase.from("jurado_salon_jurados").select("salon_id, jurado_id, personas(nombre, rol)").eq("evento_id", evento.id),
     supabase.from("jurado_criterios").select("id", { count: "exact", head: true }),
     supabase.from("jurado_evaluaciones").select("proyecto_id, jurado_id, jurado_puntajes(criterio_id)"),
   ]);
@@ -78,6 +78,12 @@ export default async function Salones({ searchParams }: PageProps<"/jurado/salon
   const equiposSinSalon = proyectos.data!.filter((p) => !salonDeProyecto.has(p.id));
   const juradosSinSalon = jurados.data!.filter((j) => !salonDeJurado.has(j.id));
   const pendientes = resumen.flatMap((s) => s.avance.filter((j) => j.faltan.length > 0));
+  // Asignados que ya no se pueden evaluar (el proyecto volvió a borrador o la persona dejó de ser jurado):
+  // no aparecen en las listas, así que al guardar salen de su salón. Avisamos para que no pase sin darse cuenta.
+  const fueraDeJuego = [
+    ...asignProyectos.data!.filter((a) => !estadosEvaluables.includes(a.proyectos.estado)).map((a) => `${a.proyectos.nombre} (volvió a borrador)`),
+    ...asignJurados.data!.filter((a) => a.personas.rol !== "jurado").map((a) => `${a.personas.nombre} (ya no es jurado)`),
+  ];
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -144,6 +150,13 @@ export default async function Salones({ searchParams }: PageProps<"/jurado/salon
             Cada equipo y cada jurado va a un solo salón en este evento. Los proyectos en borrador no aparecen porque no se evalúan.
           </p>
 
+          {fueraDeJuego.length > 0 && (
+            <div role="alert" className="mb-8 border border-destructive p-4 text-sm">
+              <p className="font-medium text-destructive">Hay asignaciones que ya no se pueden evaluar: {fueraDeJuego.join(", ")}.</p>
+              <p className="mt-1 text-[#666]">No aparecen en las listas de abajo. Cuando guardes las asignaciones, van a salir de su salón.</p>
+            </div>
+          )}
+
           <form action={guardarAsignaciones} className="grid gap-10">
             <input type="hidden" name="evento_id" value={evento.id} />
 
@@ -153,11 +166,11 @@ export default async function Salones({ searchParams }: PageProps<"/jurado/salon
                 <div className="border p-6 text-center text-sm text-[#666]">Todavía no hay proyectos publicados.</div>
               ) : (
                 <Table>
-                  <TableHeader><TableRow><TableHead>Proyecto</TableHead><TableHead className="w-56">Salón</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Proyecto</TableHead><TableHead className="w-36 sm:w-56">Salón</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {proyectos.data!.map((p) => (
                       <TableRow key={p.id}>
-                        <TableCell>
+                        <TableCell className="whitespace-normal break-words">
                           <label htmlFor={`proyecto-${p.id}`} className="font-medium">{p.nombre}</label>
                           {p.estado !== "publicado" && <Badge variant="outline" className="ml-2 capitalize">{p.estado}</Badge>}
                         </TableCell>
@@ -180,11 +193,11 @@ export default async function Salones({ searchParams }: PageProps<"/jurado/salon
                 <div className="border p-6 text-center text-sm text-[#666]">No hay jurados cargados. Se suman desde Miembros.</div>
               ) : (
                 <Table>
-                  <TableHeader><TableRow><TableHead>Jurado</TableHead><TableHead className="w-56">Salón</TableHead></TableRow></TableHeader>
+                  <TableHeader><TableRow><TableHead>Jurado</TableHead><TableHead className="w-36 sm:w-56">Salón</TableHead></TableRow></TableHeader>
                   <TableBody>
                     {jurados.data!.map((j) => (
                       <TableRow key={j.id}>
-                        <TableCell><label htmlFor={`jurado-${j.id}`} className="font-medium">{j.nombre}</label></TableCell>
+                        <TableCell className="whitespace-normal break-words"><label htmlFor={`jurado-${j.id}`} className="font-medium">{j.nombre}</label></TableCell>
                         <TableCell>
                           <select id={`jurado-${j.id}`} name={`jurado:${j.id}`} defaultValue={salonDeJurado.get(j.id) ?? ""} className={selectClase}>
                             <option value="">Sin salón</option>
@@ -241,9 +254,9 @@ export default async function Salones({ searchParams }: PageProps<"/jurado/salon
                     <TableBody>
                       {s.avance.map((j) => (
                         <TableRow key={j.id}>
-                          <TableCell className="font-medium">{j.nombre}</TableCell>
+                          <TableCell className="whitespace-normal font-medium">{j.nombre}</TableCell>
                           <TableCell className="text-right font-serif text-lg">{s.equipos.length - j.faltan.length}/{s.equipos.length}</TableCell>
-                          <TableCell className="text-sm">
+                          <TableCell className="whitespace-normal text-sm">
                             {j.faltan.length === 0
                               ? <Badge variant="outline">Al día</Badge>
                               : <span className="text-[#666]">{j.faltan.map((p) => p.nombre).join(", ")}</span>}

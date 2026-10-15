@@ -8,9 +8,10 @@ create table jurado_salones (
   nombre text not null check (btrim(nombre) <> ''),
   orden int not null default 0,
   created_at timestamptz not null default now(),
-  unique (evento_id, nombre),
   unique (id, evento_id) -- para que las asignaciones no puedan apuntar a un salón de otro evento
 );
+-- Sin nombres repetidos en un mismo evento, aunque cambien mayúsculas ("Salón A" y "salón a").
+create unique index jurado_salones_nombre_unico on jurado_salones (evento_id, lower(nombre));
 
 -- Qué equipos se presentan en cada salón. La clave (evento, proyecto) impide poner un equipo en dos salones del mismo evento.
 create table jurado_salon_proyectos (
