@@ -79,17 +79,23 @@ isOneToOne: false
                   ]
                 },"jurado_evaluaciones": {
                   Row: {
-                    "comentarios": string | null,"created_at": string,"id": string,"jurado_id": string,"propuesta_valor": string | null,"proyecto_id": string,"updated_at": string
+                    "comentarios": string | null,"created_at": string,"evento_id": string | null,"id": string,"jurado_id": string,"propuesta_valor": string | null,"proyecto_id": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "comentarios"?: string | null,"created_at"?: string,"id"?: string,"jurado_id": string,"propuesta_valor"?: string | null,"proyecto_id": string,"updated_at"?: string
+                    "comentarios"?: string | null,"created_at"?: string,"evento_id"?: string | null,"id"?: string,"jurado_id": string,"propuesta_valor"?: string | null,"proyecto_id": string,"updated_at"?: string
                   }
                   Update: {
-                    "comentarios"?: string | null,"created_at"?: string,"id"?: string,"jurado_id"?: string,"propuesta_valor"?: string | null,"proyecto_id"?: string,"updated_at"?: string
+                    "comentarios"?: string | null,"created_at"?: string,"evento_id"?: string | null,"id"?: string,"jurado_id"?: string,"propuesta_valor"?: string | null,"proyecto_id"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
+      foreignKeyName: "jurado_evaluaciones_evento_id_fkey"
+      columns: ["evento_id"]
+isOneToOne: false
+      referencedRelation: "eventos"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "jurado_evaluaciones_jurado_id_fkey"
       columns: ["jurado_id"]
 isOneToOne: false
@@ -303,6 +309,9 @@ isOneToOne: false
           Functions: {
             "jurado_guardar_salones":
 { Args: { "p_evento": string,"p_jurados": Json,"p_proyectos": Json }; Returns: undefined
+                           },
+"jurado_me_toca":
+{ Args: { "p_evento": string,"p_proyecto": string }; Returns: boolean
                            },
 "mi_rol":
 { Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["rol"]
