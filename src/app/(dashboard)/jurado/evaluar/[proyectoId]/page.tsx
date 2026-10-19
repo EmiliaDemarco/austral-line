@@ -107,7 +107,10 @@ export default async function EvaluarProyecto({ params, searchParams }: PageProp
   }
 
   // El admin puede mirar la planilla, pero las notas las cargan solo los jurados.
-  const soloLectura = persona.rol !== "jurado";
+  // Y cuando se publican las devoluciones del evento, las notas quedan cerradas (la base también lo impide).
+  const { data: publicacion } = await supabase.from("jurado_publicaciones").select("evento_id").eq("evento_id", evento.id).maybeSingle();
+  const cerrado = !!publicacion;
+  const soloLectura = persona.rol !== "jurado" || cerrado;
 
   const [criterios, evaluacion] = await Promise.all([
     supabase.from("jurado_criterios").select("id, nombre, descripcion").order("orden"),
@@ -166,7 +169,9 @@ export default async function EvaluarProyecto({ params, searchParams }: PageProp
 
       {soloLectura && (
         <p className="mb-8 border-l-2 border-primary pl-4 text-sm text-[#666]">
-          Estás viendo la planilla como administrador. Las notas las cargan solo los jurados, así no se mezclan con el ranking.
+          {cerrado
+            ? "Las devoluciones de este evento ya se publicaron: las notas quedaron cerradas."
+            : "Estás viendo la planilla como administrador. Las notas las cargan solo los jurados, así no se mezclan con el ranking."}
         </p>
       )}
 
