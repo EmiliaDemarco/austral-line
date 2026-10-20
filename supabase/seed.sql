@@ -78,3 +78,17 @@ insert into personas (nombre, email, rol) values ('Carla Alumna', 'carla@alumnos
 insert into proyecto_integrantes
   select p.id, pe.id from proyectos p, personas pe
   where p.nombre = 'Reciclá' and pe.email = 'carla@alumnos.austral.edu.ar';
+
+-- GRUPO MENTORES: reuniones de Marta para probar el resumen pre-reunión. Una pasada con notas y dos próximas
+-- (la de Tutorly es la primera y no tiene lugar cargado, para ver cómo muestra lo que falta).
+insert into mentores_reuniones (proyecto_id, mentor_id, inicio, lugar, notas, proximos_pasos)
+select p.id, m.id, now() + v.cuando, v.lugar, v.notas, v.pasos
+from (values
+  ('AgroSense', interval '-8 days', 'https://meet.google.com/abc-defg-hij',
+    'Revisamos el piloto en Maipú: los sensores andan bien, pero los productores no abren la app todos los días.',
+    'Probar alertas por WhatsApp con 2 productores y traer números de uso.'),
+  ('AgroSense', interval '3 days', 'https://meet.google.com/abc-defg-hij', null, null),
+  ('Tutorly', interval '2 days', null, null, null)
+) as v(proyecto, cuando, lugar, notas, pasos)
+join proyectos p on p.nombre = v.proyecto
+join personas m on m.email = 'marta@empresa.com';
