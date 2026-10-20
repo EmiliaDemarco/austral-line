@@ -102,7 +102,7 @@ export default async function Reuniones({ searchParams }: PageProps<"/mentores/r
             {[
               { titulo: "Resumen a tiempo", valor: `${m.aTiempo} de ${m.debian}`, detalle: "reuniones que ya debían tenerlo" },
               { titulo: "Leídos", valor: `${m.leidos} de ${m.aTiempo}`, detalle: "el mentor lo abrió en la app" },
-              { titulo: "Avisos al coordinador", valor: String(m.avisos), detalle: `${m.avisosUtiles} útiles de ${m.avisosMarcados} marcados` },
+              { titulo: "Avisos al coordinador", valor: String(m.avisos), detalle: `sirvieron: ${m.avisosUtiles} de ${m.avisosMarcados} marcados` },
             ].map((t) => (
               <div key={t.titulo} className="bg-background p-6">
                 <p className="text-sm text-[#666]">{t.titulo}</p>

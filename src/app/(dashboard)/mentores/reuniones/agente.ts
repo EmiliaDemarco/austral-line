@@ -68,6 +68,8 @@ Reglas:
 - Completá "aviso" solo si hay algo que el coordinador tiene que mirar: falta información importante para la reunión,
   el proyecto parece trabado (los mismos pendientes reunión tras reunión, sin avances) o las notas muestran un conflicto
   (dentro del equipo o con el mentor). Si está todo bien, dejalo vacío.
+- Datos menores que faltan (el lugar o link, las notas de una reunión) no son motivo de aviso: el mentor ya los ve en
+  "falta_informacion" y los resuelve él.
 Respondé en español rioplatense, claro y sin exagerar.`;
 
 async function sintetizar(d: DatosResumen): Promise<{ ia: Sintesis; aviso: string | null; error: string | null }> {
@@ -131,11 +133,11 @@ export async function prepararResumen(
   const salio = !!actual && yaSalio(actual, ahora);
   if (salio && !nuevaFecha) return { ok: true, mensaje: "El resumen ya le llegó al mentor, así que no se vuelve a mandar." };
   if (r.cancelada || new Date(r.inicio).getTime() <= ahora || enEspera(r.inicio, ahora)) {
-    const problema = actual && !salio ? await retirar(supabase, actual, "cancelado") : null;
+    const retirado = !!actual && !salio;
+    const problema = retirado ? await retirar(supabase, actual, "cancelado") : null;
     const motivo = r.cancelada ? "la reunión está cancelada" : enEspera(r.inicio, ahora) ? "falta más de un mes, se programa más adelante" : "la reunión ya pasó";
-    return problema
-      ? { ok: false, mensaje: `No se pudo cancelar el resumen que estaba programado: ${problema}` }
-      : { ok: true, mensaje: `No se programa resumen: ${motivo}.` };
+    if (problema) return { ok: false, mensaje: `No se pudo cancelar el resumen que estaba programado: ${problema}` };
+    return { ok: true, mensaje: retirado ? `Se canceló el resumen que estaba programado (${motivo}).` : `No se programa resumen: ${motivo}.` };
   }
 
   const ahoraIso = new Date(ahora).toISOString();
