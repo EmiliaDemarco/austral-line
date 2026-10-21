@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { fechaHora } from "../../comunicaciones/plantillas";
 import { guardarDevolucion } from "../acciones";
-import { cargarEvento, estados } from "../datos";
+import { armarTextos, cargarEvento, estados } from "../datos";
 
 const formato = (n: number | null | undefined) => (n == null ? "—" : Number(n).toFixed(1));
 const areaClase = "w-full border bg-transparent p-3 text-sm outline-none focus-visible:border-ring";
@@ -33,28 +33,29 @@ export default async function RevisarDevolucion({ params, searchParams }: PagePr
     .order("cambiado_at", { ascending: false });
   if (errorHistorial) throw errorHistorial;
 
-  // Si las evaluaciones cambiaron desde la última revisión, los textos se vuelven a cargar desde las evaluaciones
-  // (y se muestra la versión anterior como referencia).
+  // Los textos que el admin ya editó se conservan siempre. Si un jurado cambió o agregó algo, aparece marcado como nuevo.
   const vigente = devolucion && equipo.estado === "lista";
-  const comentarios = vigente ? devolucion.comentarios : equipo.comentariosOriginales;
-  const propuestas = vigente ? devolucion.propuestas : equipo.propuestasOriginales;
+  const hayRevision = !!devolucion;
+  const comentarios = armarTextos(equipo.comentariosOriginales, equipo.vistos?.comentarios ?? [], devolucion?.comentarios ?? [], hayRevision);
+  const propuestas = armarTextos(equipo.propuestasOriginales, equipo.vistos?.propuestas ?? [], devolucion?.propuestas ?? [], hayRevision);
+  const hayNuevos = [...comentarios.items, ...propuestas.items].some((t) => t.nuevo);
+  const reemplazados = [...propuestas.reemplazados, ...comentarios.reemplazados];
   const volver = `/jurado/devoluciones?evento=${eventoId}`;
 
-  const bloque = (titulo: string, campo: "comentario" | "propuesta", actuales: string[], originales: string[], vacio: string) => (
+  const bloque = (titulo: string, campo: "comentario" | "propuesta", items: { texto: string; original: string; nuevo: boolean }[], vacio: string) => (
     <fieldset className="mb-10 grid gap-5">
       <legend className="mb-1 font-serif text-xl">{titulo}</legend>
-      {actuales.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-sm text-[#666]">{vacio}</p>
-      ) : actuales.map((texto, i) => (
-        <div key={`${campo}-${i}`} className="grid gap-2">
+      ) : items.map(({ texto, original, nuevo }, i) => (
+        <div key={`${campo}-${i}`} className={nuevo ? "grid gap-2 border border-destructive p-3" : "grid gap-2"}>
           <Label htmlFor={`${campo}-${i}`} className="text-xs text-[#666]">
             {campo === "comentario" ? `Comentario ${i + 1}` : `Propuesta ${i + 1}`}
-            {originales[i] !== undefined && originales[i] !== texto && " · editado"}
+            {nuevo ? <span className="text-destructive"> · nuevo o modificado por un jurado: revisalo</span> : texto !== original && " · editado"}
           </Label>
           <textarea id={`${campo}-${i}`} name={campo} rows={3} defaultValue={texto} className={areaClase} />
-          {originales[i] !== undefined && originales[i] !== texto && (
-            <p className="text-xs text-[#666]">Original: {originales[i]}</p>
-          )}
+          <input type="hidden" name={`${campo}_original`} value={original} />
+          {!nuevo && texto !== original && <p className="text-xs text-[#666]">Original: {original}</p>}
         </div>
       ))}
     </fieldset>
@@ -79,9 +80,11 @@ export default async function RevisarDevolucion({ params, searchParams }: PagePr
       {equipo.estado === "desactualizada" && (
         <div role="alert" className="mb-8 border border-destructive p-4 text-sm">
           <p className="font-medium text-destructive">Las evaluaciones cambiaron desde tu última revisión.</p>
-          <p className="mt-1 text-[#666]">Los textos se volvieron a cargar desde las evaluaciones actuales. Revisalos y guardá para poder publicar.</p>
-          {devolucion && devolucion.comentarios.length > 0 && (
-            <p className="mt-2 text-[#666]">Tu versión anterior: {devolucion.comentarios.filter(Boolean).join(" · ")}</p>
+          <p className="mt-1 text-[#666]">
+            Tus textos editados se conservaron. {hayNuevos ? "Los que un jurado agregó o cambió están marcados en rojo: revisalos antes de guardar." : "Ningún jurado agregó ni cambió textos."} Guardá para poder publicar.
+          </p>
+          {reemplazados.length > 0 && (
+            <p className="mt-2 text-[#666]">Versión tuya de textos que el jurado cambió o quitó (ya no se usa): {reemplazados.join(" · ")}</p>
           )}
         </div>
       )}
@@ -118,8 +121,15 @@ export default async function RevisarDevolucion({ params, searchParams }: PagePr
         <p className="mb-6 text-sm text-[#666]">
           Estos textos los ve el equipo, sin nombres. Podés editarlos o vaciar alguno para que no se muestre (por ejemplo, si identifica al jurado).
         </p>
-        {bloque("Cómo entendieron su propuesta de valor", "propuesta", propuestas, equipo.propuestasOriginales, "Ningún jurado completó la propuesta de valor.")}
-        {bloque("Comentarios del jurado", "comentario", comentarios, equipo.comentariosOriginales, "Ningún jurado dejó comentarios.")}
+        {bloque("Cómo entendieron su propuesta de valor", "propuesta", propuestas.items, "Ningún jurado completó la propuesta de valor.")}
+        {bloque("Comentarios del jurado", "comentario", comentarios.items, "Ningún jurado dejó comentarios.")}
+
+        {hayNuevos && (
+          <label className="mb-8 flex items-start gap-3 border border-destructive p-4 text-sm">
+            <input type="checkbox" name="confirmo_nuevos" required className="mt-1" />
+            <span>Revisé los textos marcados: no identifican a ningún jurado.</span>
+          </label>
+        )}
 
         {publicado && (
           <div className="mb-8 grid gap-2">

@@ -173,6 +173,26 @@ isOneToOne: false
       referencedColumns: ["evento_id","proyecto_id"]
     }
                   ]
+                },"jurado_devoluciones_vistos": {
+                  Row: {
+                    "comentarios": (string)[],"evento_id": string,"propuestas": (string)[],"proyecto_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "comentarios"?: (string)[],"evento_id": string,"propuestas"?: (string)[],"proyecto_id": string
+                  }
+                  Update: {
+                    "comentarios"?: (string)[],"evento_id"?: string,"propuestas"?: (string)[],"proyecto_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "jurado_devoluciones_vistos_evento_id_proyecto_id_fkey"
+      columns: ["evento_id","proyecto_id"]
+isOneToOne: true
+      referencedRelation: "jurado_devoluciones"
+      referencedColumns: ["evento_id","proyecto_id"]
+    }
+                  ]
                 },"jurado_envios": {
                   Row: {
                     "asunto": string,"created_at": string,"email": string,"error": string | null,"estado": string,"evento_id": string,"id": string,"persona_id": string | null,"programado_para": string | null,"resend_id": string | null,"tipo": string

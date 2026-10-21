@@ -16,10 +16,25 @@ export const estados: Record<Estado, { texto: string; bloquea: boolean }> = {
 
 // Textos únicos y en orden alfabético: así el orden no delata qué jurado escribió qué.
 export const textosSinNombre = (textos: (string | null)[]) =>
-  [...new Set(textos.map((t) => t?.trim()).filter((t): t is string => !!t))].sort((a, b) => a.localeCompare(b, "es"));
+  [...new Set(textos.map((t) => t?.replace(/\r\n/g, "\n").trim()).filter((t): t is string => !!t))].sort((a, b) => a.localeCompare(b, "es"));
+
+// Un texto por cada original actual de los jurados. Si el admin ya lo había revisado (el original coincide con uno
+// que vio), se conserva SU versión, incluso si la vació. Si es nuevo o el jurado lo cambió, aparece tal cual lo escribió
+// el jurado y queda marcado para que el admin lo revise. Solo se marca cuando ya había una revisión previa.
+export function armarTextos(actuales: string[], vistos: string[], guardados: string[], hayRevision: boolean) {
+  const items = actuales.map((original) => {
+    const i = vistos.indexOf(original);
+    return i >= 0 && guardados[i] !== undefined
+      ? { original, texto: guardados[i], nuevo: false }
+      : { original, texto: original, nuevo: hayRevision };
+  });
+  // Textos que el admin había revisado y que el jurado cambió o quitó: se muestran como referencia, no se reaplican.
+  const reemplazados = vistos.flatMap((v, i) => (!actuales.includes(v) && (guardados[i] ?? "").trim() ? [guardados[i]] : []));
+  return { items, reemplazados };
+}
 
 export async function cargarEvento(supabase: Cliente, eventoId: string) {
-  const [evento, publicacion, salones, criterios, evaluaciones, devoluciones, ausencias] = await Promise.all([
+  const [evento, publicacion, salones, criterios, evaluaciones, devoluciones, ausencias, vistos] = await Promise.all([
     supabase.from("eventos").select("id, nombre, inicio").eq("id", eventoId).maybeSingle(),
     supabase.from("jurado_publicaciones").select("publicada_at, personas(nombre)").eq("evento_id", eventoId).maybeSingle(),
     supabase
@@ -34,9 +49,10 @@ export async function cargarEvento(supabase: Cliente, eventoId: string) {
       .eq("evento_id", eventoId),
     supabase.from("jurado_devoluciones").select("*").eq("evento_id", eventoId),
     supabase.from("jurado_ausencias").select("proyecto_id").eq("evento_id", eventoId),
+    supabase.from("jurado_devoluciones_vistos").select("proyecto_id, comentarios, propuestas").eq("evento_id", eventoId),
   ]);
   if (evento.error?.code === "22P02") return null;
-  for (const r of [evento, publicacion, salones, criterios, evaluaciones, devoluciones, ausencias]) if (r.error) throw r.error;
+  for (const r of [evento, publicacion, salones, criterios, evaluaciones, devoluciones, ausencias, vistos]) if (r.error) throw r.error;
   if (!evento.data) return null;
 
   const totalCriterios = criterios.data!.length;
@@ -74,6 +90,8 @@ export async function cargarEvento(supabase: Cliente, eventoId: string) {
       ...q,
       estado,
       devolucion,
+      // Los textos originales que el admin vio al revisar (tabla solo para admin).
+      vistos: vistos.data!.find((v) => v.proyecto_id === q.id) ?? null,
       evaluaciones: evs,
       faltan: q.jurados.filter((j) => !completas.some((e) => e.jurado_id === j.id)),
       // Vista previa de las notas: la base las vuelve a calcular igual al guardar la devolución.

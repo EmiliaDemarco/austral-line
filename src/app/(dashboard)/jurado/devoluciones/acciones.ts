@@ -7,6 +7,7 @@ import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { enviarCorreos, modoPrueba } from "../_resend";
 import { urlBase } from "../comunicaciones/datos";
+import { textosSinNombre } from "./datos";
 import { mailDevolucion } from "./plantilla";
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
@@ -29,23 +30,53 @@ async function preparar(formData: FormData) {
   };
 }
 
-const textos = (formData: FormData, campo: string) => formData.getAll(campo).map((t) => String(t).trim());
+const textos = (formData: FormData, campo: string) => formData.getAll(campo).map((t) => String(t).replace(/\r\n/g, "\n").trim());
 
 // Guardar = revisar: la base recalcula las notas y toma la "foto" de las evaluaciones en ese momento.
 export async function guardarDevolucion(formData: FormData) {
   const { eventoId, proyectoId, supabase, ficha } = await preparar(formData);
   const motivo = String(formData.get("motivo") ?? "").trim();
-  const datos = { comentarios: textos(formData, "comentario"), propuestas: textos(formData, "propuesta"), motivo_correccion: motivo || null };
+  const comentarios = textos(formData, "comentario");
+  const propuestas = textos(formData, "propuesta");
+
+  // Los originales que el admin tenía en pantalla tienen que seguir siendo los vigentes: si un jurado cambió algo
+  // mientras revisaba, se frena para que no se publique un texto que nadie miró.
+  const { data: evaluaciones, error: errorEvaluaciones } = await supabase
+    .from("jurado_evaluaciones").select("comentarios, propuesta_valor").eq("evento_id", eventoId).eq("proyecto_id", proyectoId);
+  if (errorEvaluaciones) throw errorEvaluaciones;
+  const comentariosVistos = textosSinNombre(evaluaciones.map((e) => e.comentarios));
+  const propuestasVistas = textosSinNombre(evaluaciones.map((e) => e.propuesta_valor));
+  const mismos = (a: string[], b: string[]) => a.length === b.length && a.every((t, i) => t === b[i]);
+  if (!mismos(textos(formData, "comentario_original"), comentariosVistos) || !mismos(textos(formData, "propuesta_original"), propuestasVistas)
+    || comentarios.length !== comentariosVistos.length || propuestas.length !== propuestasVistas.length) {
+    volver(ficha, "error", "Los jurados cambiaron sus textos mientras revisabas. No se guardó nada: revisá de nuevo lo que se muestra ahora.");
+  }
+
+  // Si ya había una revisión, los textos nuevos o modificados por un jurado hay que confirmarlos a mano.
+  const [previa, vistosPrevios] = await Promise.all([
+    supabase.from("jurado_devoluciones").select("proyecto_id").eq("evento_id", eventoId).eq("proyecto_id", proyectoId).maybeSingle(),
+    supabase.from("jurado_devoluciones_vistos").select("comentarios, propuestas").eq("evento_id", eventoId).eq("proyecto_id", proyectoId).maybeSingle(),
+  ]);
+  if (previa.error) throw previa.error;
+  if (vistosPrevios.error) throw vistosPrevios.error;
+  const hayNuevos = !!previa.data && (comentariosVistos.some((t) => !(vistosPrevios.data?.comentarios ?? []).includes(t))
+    || propuestasVistas.some((t) => !(vistosPrevios.data?.propuestas ?? []).includes(t)));
+  if (hayNuevos && formData.get("confirmo_nuevos") !== "on") {
+    volver(ficha, "error", "Hay textos nuevos o modificados por un jurado. Confirmá que los revisaste para guardar.");
+  }
+
+  const datos = { comentarios, propuestas, motivo_correccion: motivo || null };
   // Insertar o actualizar por separado: después de publicar no se pueden crear devoluciones nuevas, solo corregir.
-  const { data: existente, error: errorExistente } = await supabase
-    .from("jurado_devoluciones").select("proyecto_id").eq("evento_id", eventoId).eq("proyecto_id", proyectoId).maybeSingle();
-  if (errorExistente) throw errorExistente;
-  const { error } = existente
+  const { error } = previa.data
     ? await supabase.from("jurado_devoluciones").update(datos).eq("evento_id", eventoId).eq("proyecto_id", proyectoId)
     : await supabase.from("jurado_devoluciones").insert({ ...datos, evento_id: eventoId, proyecto_id: proyectoId });
   if (error?.message.includes("motivo")) volver(ficha, "error", "Para corregir una devolución ya publicada, escribí el motivo.");
   if (error?.code === "42501") volver(ficha, "error", "No se guardó: el equipo está marcado como \"No se presentó\" o el evento ya se publicó sin su devolución.");
   if (error) throw error;
+  // Después de guardar, se anota qué textos originales vio el admin. Si esto fallara, la próxima revisión marca todo como nuevo (no se filtra nada).
+  const { error: errorVistos } = await supabase.from("jurado_devoluciones_vistos")
+    .upsert({ evento_id: eventoId, proyecto_id: proyectoId, comentarios: comentariosVistos, propuestas: propuestasVistas });
+  if (errorVistos) throw errorVistos;
   volver(ficha, "ok", motivo ? "Corrección guardada. El equipo ve la fecha de actualización." : "Devolución revisada.");
 }
 

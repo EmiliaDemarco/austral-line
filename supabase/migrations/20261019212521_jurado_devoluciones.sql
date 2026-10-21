@@ -39,6 +39,18 @@ create table jurado_devoluciones (
   primary key (evento_id, proyecto_id)
 );
 
+-- Los textos originales de los jurados tal como los vio el admin al revisar (misma posición que en la devolución).
+-- Sirven para conservar sus ediciones si las evaluaciones cambian y para marcar qué texto es nuevo.
+-- Van en una tabla aparte, solo para el admin: los originales pueden nombrar al jurado y el equipo no debe poder leerlos.
+create table jurado_devoluciones_vistos (
+  evento_id uuid not null,
+  proyecto_id uuid not null,
+  comentarios text[] not null default '{}',
+  propuestas text[] not null default '{}',
+  primary key (evento_id, proyecto_id),
+  foreign key (evento_id, proyecto_id) references jurado_devoluciones(evento_id, proyecto_id) on delete cascade
+);
+
 -- Historial interno de correcciones posteriores a la publicación (solo lo ve el admin).
 create table jurado_devoluciones_historial (
   id uuid primary key default gen_random_uuid(),
@@ -204,6 +216,10 @@ create policy "alumno ve la de su equipo, publicada" on jurado_devoluciones for 
     and proyecto_id in (
       select pi.proyecto_id from proyecto_integrantes pi join personas pe on pe.id = pi.persona_id
       where lower(pe.email) = lower(auth.jwt() ->> 'email')));
+
+alter table jurado_devoluciones_vistos enable row level security;
+create policy "admin todo" on jurado_devoluciones_vistos for all to authenticated
+  using (mi_rol() = 'admin') with check (mi_rol() = 'admin');
 
 alter table jurado_devoluciones_historial enable row level security;
 create policy "admin lee" on jurado_devoluciones_historial for select to authenticated using (mi_rol() = 'admin');
