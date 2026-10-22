@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { estadosEvaluables, promedio } from "../_lib";
+import { criteriosDelEvento } from "../_criterios";
 import { conEvento, elegirEvento, eventosVisibles, salonDelJurado } from "../_eventos";
 import { fechaHora } from "../comunicaciones/plantillas";
 
@@ -34,7 +35,7 @@ export default async function Deliberacion({ searchParams }: PageProps<"/jurado/
 
   const [proyectos, criterios, evaluaciones] = await Promise.all([
     supabase.from("proyectos").select("id, nombre, estado, jurado_fichas(propuesta_valor)").in("id", ids).in("estado", estadosEvaluables),
-    supabase.from("jurado_criterios").select("id, nombre, activo").order("orden"),
+    criteriosDelEvento(supabase, evento?.id),
     // Solo las notas de este evento: las de otros eventos (o sin evento) no se mezclan.
     salon
       ? supabase
@@ -47,12 +48,10 @@ export default async function Deliberacion({ searchParams }: PageProps<"/jurado/
   ]);
   const notas = evaluaciones?.data ?? [];
   if (proyectos.error) throw proyectos.error;
-  if (criterios.error) throw criterios.error;
   if (evaluaciones?.error) throw evaluaciones.error;
   const juradosDelSalon = salon?.jurado_salon_jurados.length ?? 0;
-  // Columnas: los criterios activos, y los desactivados solo si ya tienen notas en este salón (así el promedio cierra con lo que se ve).
-  const conNotas = new Set(notas.flatMap((e) => e.jurado_puntajes.map((p) => p.criterio_id)));
-  const columnas = criterios.data.filter((c) => c.activo || conNotas.has(c.id));
+  // Columnas: los criterios de este evento.
+  const columnas = criterios;
 
   const ranking = proyectos.data
     .map((p) => {
