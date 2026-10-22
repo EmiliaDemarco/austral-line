@@ -14,7 +14,7 @@ export async function cargarDatos(supabase: Cliente, eventoId: string) {
       .select("id, nombre, descripcion, proyecto_integrantes(personas(nombre, email))")
       .in("estado", estadosEvaluables)
       .order("nombre"),
-    supabase.from("jurado_criterios").select("nombre").order("orden"),
+    supabase.from("jurado_criterios").select("nombre").eq("activo", true).order("orden"),
     supabase.from("jurado_material_post").select("*").eq("evento_id", eventoId).maybeSingle(),
   ]);
   if (evento.error?.code === "22P02") return null; // id con formato inválido

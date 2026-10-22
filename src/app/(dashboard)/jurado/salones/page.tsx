@@ -51,7 +51,7 @@ export default async function Salones({ searchParams }: PageProps<"/jurado/salon
     supabase.from("personas").select("id, nombre").eq("rol", "jurado").order("nombre"),
     supabase.from("jurado_salon_proyectos").select("salon_id, proyecto_id, proyectos(nombre, estado)").eq("evento_id", evento.id),
     supabase.from("jurado_salon_jurados").select("salon_id, jurado_id, personas(nombre, rol)").eq("evento_id", evento.id),
-    supabase.from("jurado_criterios").select("id", { count: "exact", head: true }),
+    supabase.from("jurado_criterios").select("id").eq("activo", true),
     supabase.from("jurado_evaluaciones").select("proyecto_id, jurado_id, jurado_puntajes(criterio_id)").eq("evento_id", evento.id),
     supabase.from("jurado_evaluaciones").select("id", { count: "exact", head: true }).is("evento_id", null),
     supabase.from("jurado_publicaciones").select("evento_id").eq("evento_id", evento.id).maybeSingle(),
@@ -62,11 +62,12 @@ export default async function Salones({ searchParams }: PageProps<"/jurado/salon
 
   const salonDeProyecto = new Map(asignProyectos.data!.map((a) => [a.proyecto_id, a.salon_id]));
   const salonDeJurado = new Map(asignJurados.data!.map((a) => [a.jurado_id, a.salon_id]));
-  const totalCriterios = criterios.count ?? 0;
-  // Evaluación completa = tiene nota en todos los criterios.
+  const activos = new Set(criterios.data!.map((c) => c.id));
+  const totalCriterios = activos.size;
+  // Evaluación completa = tiene nota en todos los criterios activos (las notas de criterios desactivados no cuentan).
   const completas = new Set(
     evaluaciones.data!
-      .filter((e) => totalCriterios > 0 && e.jurado_puntajes.length >= totalCriterios)
+      .filter((e) => totalCriterios > 0 && e.jurado_puntajes.filter((p) => activos.has(p.criterio_id)).length >= totalCriterios)
       .map((e) => `${e.proyecto_id}:${e.jurado_id}`),
   );
 

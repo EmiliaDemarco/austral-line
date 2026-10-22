@@ -71,14 +71,14 @@ isOneToOne: false
                   ]
                 },"jurado_criterios": {
                   Row: {
-                    "created_at": string,"descripcion": string | null,"id": string,"nombre": string,"orden": number
+                    "activo": boolean,"created_at": string,"descripcion": string | null,"id": string,"nombre": string,"orden": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"descripcion"?: string | null,"id"?: string,"nombre": string,"orden"?: number
+                    "activo"?: boolean,"created_at"?: string,"descripcion"?: string | null,"id"?: string,"nombre": string,"orden"?: number
                   }
                   Update: {
-                    "created_at"?: string,"descripcion"?: string | null,"id"?: string,"nombre"?: string,"orden"?: number
+                    "activo"?: boolean,"created_at"?: string,"descripcion"?: string | null,"id"?: string,"nombre"?: string,"orden"?: number
                   }
                   Relationships: [
                     

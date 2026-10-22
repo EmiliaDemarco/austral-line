@@ -25,7 +25,7 @@ async function guardarEvaluacion(formData: FormData) {
   if (errorProyecto) throw errorProyecto;
   if (!proyecto || !estadosEvaluables.includes(proyecto.estado)) throw new Error("Este proyecto todavía no se puede evaluar.");
 
-  const { data: criterios, error: errorCriterios } = await supabase.from("jurado_criterios").select("id");
+  const { data: criterios, error: errorCriterios } = await supabase.from("jurado_criterios").select("id").eq("activo", true);
   if (errorCriterios) throw errorCriterios;
   const puntajes = criterios.map((c) => ({ criterio_id: c.id, puntaje: Number(formData.get(`criterio_${c.id}`)) }));
   if (puntajes.some((p) => !Number.isInteger(p.puntaje) || p.puntaje < 1 || p.puntaje > 10)) {
@@ -113,7 +113,7 @@ export default async function EvaluarProyecto({ params, searchParams }: PageProp
   const soloLectura = persona.rol !== "jurado" || cerrado;
 
   const [criterios, evaluacion] = await Promise.all([
-    supabase.from("jurado_criterios").select("id, nombre, descripcion").order("orden"),
+    supabase.from("jurado_criterios").select("id, nombre, descripcion").eq("activo", true).order("orden"),
     supabase
       .from("jurado_evaluaciones")
       .select("evento_id, propuesta_valor, comentarios, eventos(nombre), jurado_puntajes(criterio_id, puntaje)")

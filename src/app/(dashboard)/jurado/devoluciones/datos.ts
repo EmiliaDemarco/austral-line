@@ -42,7 +42,7 @@ export async function cargarEvento(supabase: Cliente, eventoId: string) {
       .select("id, nombre, jurado_salon_proyectos(proyecto_id, proyectos(nombre)), jurado_salon_jurados(jurado_id, personas(nombre))")
       .eq("evento_id", eventoId)
       .order("orden"),
-    supabase.from("jurado_criterios").select("id, nombre").order("orden"),
+    supabase.from("jurado_criterios").select("id, nombre, activo").order("orden"),
     supabase
       .from("jurado_evaluaciones")
       .select("id, proyecto_id, jurado_id, propuesta_valor, comentarios, jurado_puntajes(criterio_id, puntaje)")
@@ -55,7 +55,9 @@ export async function cargarEvento(supabase: Cliente, eventoId: string) {
   for (const r of [evento, publicacion, salones, criterios, evaluaciones, devoluciones, ausencias, vistos]) if (r.error) throw r.error;
   if (!evento.data) return null;
 
-  const totalCriterios = criterios.data!.length;
+  // Una evaluación está completa cuando tiene nota en todos los criterios activos.
+  const activos = new Set(criterios.data!.filter((c) => c.activo).map((c) => c.id));
+  const totalCriterios = activos.size;
   const ausentes = new Set(ausencias.data!.map((a) => a.proyecto_id));
   const equipos = salones.data!.flatMap((s) => s.jurado_salon_proyectos.map((sp) => ({
     id: sp.proyecto_id,
@@ -74,7 +76,7 @@ export async function cargarEvento(supabase: Cliente, eventoId: string) {
 
   const resumen = equipos.map((q) => {
     const evs = evaluaciones.data!.filter((e) => e.proyecto_id === q.id);
-    const completas = evs.filter((e) => totalCriterios > 0 && e.jurado_puntajes.length >= totalCriterios);
+    const completas = evs.filter((e) => totalCriterios > 0 && e.jurado_puntajes.filter((p) => activos.has(p.criterio_id)).length >= totalCriterios);
     const devolucion = devoluciones.data!.find((d) => d.proyecto_id === q.id) ?? null;
     const estado: Estado = ausentes.has(q.id)
       ? "ausente"
@@ -96,7 +98,8 @@ export async function cargarEvento(supabase: Cliente, eventoId: string) {
       faltan: q.jurados.filter((j) => !completas.some((e) => e.jurado_id === j.id)),
       // Vista previa de las notas: la base las vuelve a calcular igual al guardar la devolución.
       general: promedio(puntajes.map((p) => p.puntaje)),
-      porCriterio: criterios.data!.map((c) => ({
+      // Los criterios desactivados aparecen solo si este equipo ya tiene notas en ellos.
+      porCriterio: criterios.data!.filter((c) => c.activo || puntajes.some((p) => p.criterio_id === c.id)).map((c) => ({
         criterio: c.nombre,
         promedio: promedio(puntajes.filter((p) => p.criterio_id === c.id).map((p) => p.puntaje)),
       })),
