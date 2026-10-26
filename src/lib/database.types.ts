@@ -63,6 +63,58 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"alumnos_ideas": {
+                  Row: {
+                    "autor_id": string | null,"created_at": string,"descripcion": string,"estado": string,"id": string,"interes_id": number | null,"titulo": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "autor_id"?: string | null,"created_at"?: string,"descripcion": string,"estado"?: string,"id"?: string,"interes_id"?: number | null,"titulo": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "autor_id"?: string | null,"created_at"?: string,"descripcion"?: string,"estado"?: string,"id"?: string,"interes_id"?: number | null,"titulo"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_ideas_autor_id_fkey"
+      columns: ["autor_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_ideas_interes_id_fkey"
+      columns: ["interes_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_intereses_maestro"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"alumnos_ideas_interesados": {
+                  Row: {
+                    "created_at": string,"idea_id": string,"persona_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"idea_id": string,"persona_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"idea_id"?: string,"persona_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_ideas_interesados_idea_id_fkey"
+      columns: ["idea_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_ideas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_ideas_interesados_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"alumnos_intereses": {
                   Row: {
                     "estrellas": number,"interes_id": number,"persona_id": string,"updated_at": string

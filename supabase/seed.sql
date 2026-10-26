@@ -126,3 +126,28 @@ from (values
 ) as v(email, interes, estrellas)
 join personas pe on pe.email = v.email
 join alumnos_intereses_maestro m on m.nombre = v.interes;
+
+-- GRUPO ALUMNOS: ideas de ejemplo para el banco de problemas e ideas.
+insert into alumnos_ideas (autor_id, titulo, descripcion, interes_id, estado)
+select pe.id, v.titulo, v.descripcion, m.id, v.estado
+from (values
+  ('admin@austral.edu.ar', 'Trazabilidad para pequeños productores',
+    'Los productores chicos no pueden demostrar el origen de lo que venden y pierden acceso a mercados que lo exigen. ¿Cómo darles trazabilidad a bajo costo?',
+    'Agro y alimentos', 'disponible'),
+  ('diego@alumnos.austral.edu.ar', 'Alquiler de maquinaria agrícola entre vecinos',
+    'Muchas máquinas pasan la mayor parte del año paradas. Una plataforma para que productores vecinos se las alquilen entre sí.',
+    'Agro y alimentos', 'disponible'),
+  ('carla@alumnos.austral.edu.ar', 'Turnos médicos en el interior',
+    'En pueblos chicos conseguir un turno con un especialista lleva semanas y viajes. Idea: coordinar visitas de especialistas según la demanda acumulada.',
+    'Salud', 'disponible'),
+  ('admin@austral.edu.ar', 'Finanzas personales para estudiantes',
+    'Los estudiantes que empiezan a trabajar no saben cómo ahorrar o invertir sus primeros sueldos.',
+    'Finanzas y fintech', 'tomada')
+) as v(email, titulo, descripcion, tema, estado)
+join personas pe on pe.email = v.email
+join alumnos_intereses_maestro m on m.nombre = v.tema;
+
+insert into alumnos_ideas_interesados (idea_id, persona_id)
+select i.id, pe.id
+from alumnos_ideas i join personas pe on pe.email in ('elena@alumnos.austral.edu.ar', 'diego@alumnos.austral.edu.ar')
+where i.titulo = 'Trazabilidad para pequeños productores';
