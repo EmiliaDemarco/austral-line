@@ -151,3 +151,21 @@ insert into alumnos_ideas_interesados (idea_id, persona_id)
 select i.id, pe.id
 from alumnos_ideas i join personas pe on pe.email in ('elena@alumnos.austral.edu.ar', 'diego@alumnos.austral.edu.ar')
 where i.titulo = 'Trazabilidad para pequeños productores';
+
+-- GRUPO ALUMNOS: contexto y una conversación de ejemplo en una idea del banco.
+update alumnos_ideas set
+  a_quien_le_pasa = 'Productores de menos de 50 hectáreas que venden a acopiadores o en ferias.',
+  que_se_intento = 'Certificaciones privadas, pero son caras y piden mucho papeleo.',
+  como_seria_resuelto = 'Que un productor pueda mostrar el origen de un lote con el celular, sin pagar una certificación.'
+where titulo = 'Trazabilidad para pequeños productores';
+
+with pregunta as (
+  insert into alumnos_ideas_mensajes (idea_id, autor_id, texto)
+  select i.id, pe.id, '¿Hay algún productor que conozcan para entrevistar?'
+  from alumnos_ideas i, personas pe
+  where i.titulo = 'Trazabilidad para pequeños productores' and pe.email = 'elena@alumnos.austral.edu.ar'
+  returning id, idea_id
+)
+insert into alumnos_ideas_mensajes (idea_id, autor_id, respuesta_a, texto)
+select pregunta.idea_id, pe.id, pregunta.id, 'Sí, mi familia trabaja con varios en San Pedro. Les puedo preguntar.'
+from pregunta, personas pe where pe.email = 'diego@alumnos.austral.edu.ar';
