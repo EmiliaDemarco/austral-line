@@ -65,14 +65,14 @@ isOneToOne: true
                   ]
                 },"alumnos_ideas": {
                   Row: {
-                    "autor_id": string | null,"created_at": string,"descripcion": string,"estado": string,"id": string,"interes_id": number | null,"titulo": string,"updated_at": string
+                    "a_quien_le_pasa": string | null,"autor_id": string | null,"como_seria_resuelto": string | null,"created_at": string,"descripcion": string,"estado": string,"id": string,"interes_id": number | null,"que_se_intento": string | null,"titulo": string,"updated_at": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "autor_id"?: string | null,"created_at"?: string,"descripcion": string,"estado"?: string,"id"?: string,"interes_id"?: number | null,"titulo": string,"updated_at"?: string
+                    "a_quien_le_pasa"?: string | null,"autor_id"?: string | null,"como_seria_resuelto"?: string | null,"created_at"?: string,"descripcion": string,"estado"?: string,"id"?: string,"interes_id"?: number | null,"que_se_intento"?: string | null,"titulo": string,"updated_at"?: string
                   }
                   Update: {
-                    "autor_id"?: string | null,"created_at"?: string,"descripcion"?: string,"estado"?: string,"id"?: string,"interes_id"?: number | null,"titulo"?: string,"updated_at"?: string
+                    "a_quien_le_pasa"?: string | null,"autor_id"?: string | null,"como_seria_resuelto"?: string | null,"created_at"?: string,"descripcion"?: string,"estado"?: string,"id"?: string,"interes_id"?: number | null,"que_se_intento"?: string | null,"titulo"?: string,"updated_at"?: string
                   }
                   Relationships: [
                     {
@@ -112,6 +112,38 @@ isOneToOne: false
       columns: ["persona_id"]
 isOneToOne: false
       referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"alumnos_ideas_mensajes": {
+                  Row: {
+                    "autor_id": string | null,"created_at": string,"id": string,"idea_id": string,"respuesta_a": string | null,"texto": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "autor_id"?: string | null,"created_at"?: string,"id"?: string,"idea_id": string,"respuesta_a"?: string | null,"texto": string
+                  }
+                  Update: {
+                    "autor_id"?: string | null,"created_at"?: string,"id"?: string,"idea_id"?: string,"respuesta_a"?: string | null,"texto"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_ideas_mensajes_autor_id_fkey"
+      columns: ["autor_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_ideas_mensajes_idea_id_fkey"
+      columns: ["idea_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_ideas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_ideas_mensajes_respuesta_a_fkey"
+      columns: ["respuesta_a"]
+isOneToOne: false
+      referencedRelation: "alumnos_ideas_mensajes"
       referencedColumns: ["id"]
     }
                   ]

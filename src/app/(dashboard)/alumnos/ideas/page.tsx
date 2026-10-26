@@ -2,66 +2,14 @@
 // Un alumno sin idea propia marca "Me interesa" y ve quiénes más se interesaron.
 // El sistema no asigna ideas: solo el autor o los profesores la marcan como tomada.
 import { Suspense } from "react";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const volverCon = (error: string) => redirect(`/alumnos/ideas?error=${encodeURIComponent(error)}`);
-
-async function proponerIdea(formData: FormData) {
-  "use server";
-  const persona = await requireRol("alumno");
-  const titulo = String(formData.get("titulo") ?? "").trim();
-  const descripcion = String(formData.get("descripcion") ?? "").trim();
-  const interesId = Number(formData.get("interes_id") ?? 0);
-  if (titulo.length < 3) volverCon("El título tiene que tener al menos 3 caracteres.");
-  if (descripcion.length < 10) volverCon("Contá un poco más en la descripción (al menos 10 caracteres).");
-  if (!interesId) volverCon("Elegí el tema de la idea.");
-
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("alumnos_ideas")
-    .insert({ autor_id: persona.id, titulo, descripcion, interes_id: interesId });
-  if (error) volverCon(`No se pudo cargar la idea: ${error.message}`);
-
-  revalidatePath("/alumnos/ideas");
-  redirect("/alumnos/ideas?ok=propuesta");
-}
-
-async function cambiarInteres(formData: FormData) {
-  "use server";
-  const persona = await requireRol("alumno");
-  const ideaId = String(formData.get("idea_id"));
-  const supabase = await createClient();
-  const { error } =
-    formData.get("accion") === "quitar"
-      ? await supabase.from("alumnos_ideas_interesados").delete().eq("idea_id", ideaId).eq("persona_id", persona.id)
-      : await supabase.from("alumnos_ideas_interesados").insert({ idea_id: ideaId, persona_id: persona.id });
-  if (error) volverCon(`No se pudo actualizar tu interés: ${error.message}`);
-  revalidatePath("/alumnos/ideas");
-}
-
-async function cambiarEstado(formData: FormData) {
-  "use server";
-  await requireRol("alumno");
-  const ideaId = String(formData.get("idea_id"));
-  const estado = formData.get("estado") === "tomada" ? "tomada" : "disponible";
-  const supabase = await createClient();
-  // La base solo deja cambiarla al autor o a los profesores (RLS): si no corresponde, no cambia nada.
-  const { data, error } = await supabase
-    .from("alumnos_ideas")
-    .update({ estado, updated_at: new Date().toISOString() })
-    .eq("id", ideaId)
-    .select("id");
-  if (error) volverCon(`No se pudo cambiar el estado: ${error.message}`);
-  if (!data?.length) volverCon("Solo quien propuso la idea o los profesores pueden cambiar su estado.");
-  revalidatePath("/alumnos/ideas");
-}
+import { cambiarEstado, cambiarInteres, proponerIdea } from "./_acciones";
 
 async function Aviso({ searchParams }: Pick<PageProps<"/alumnos/ideas">, "searchParams">) {
   const { error, ok } = await searchParams;
@@ -115,7 +63,7 @@ export default async function BancoDeIdeas({ searchParams }: PageProps<"/alumnos
             {tomada && <Badge variant="secondary">Tomada</Badge>}
             {!tomada && esAlumno && afinidad(idea.interes_id) >= 4 && <Badge>Afín a tus intereses</Badge>}
           </div>
-          <p className="font-serif text-xl">{idea.titulo}</p>
+          <Link href={`/alumnos/ideas/${idea.id}`} className="font-serif text-xl hover:underline hover:underline-offset-4">{idea.titulo}</Link>
           <p className="text-sm text-[#666]">Propuesta por {autor}</p>
         </div>
 
@@ -139,7 +87,10 @@ export default async function BancoDeIdeas({ searchParams }: PageProps<"/alumnos
           )}
         </div>
 
-        <div className="mt-auto flex flex-wrap gap-2">
+        <div className="mt-auto flex flex-wrap items-center gap-2">
+          <Link href={`/alumnos/ideas/${idea.id}`} className="mr-2 text-sm underline underline-offset-4 hover:text-[#666]">
+            Ver idea y preguntas
+          </Link>
           {esAlumno && !tomada && (
             <form action={cambiarInteres}>
               <input type="hidden" name="idea_id" value={idea.id} />

@@ -17,7 +17,7 @@ export function SubNav() {
   return (
     <nav className="mb-8 flex gap-6 overflow-x-auto border-b">
       {pestanas.map(({ href, label }) => {
-        const activa = pathname === href;
+        const activa = href === "/alumnos" ? pathname === href : pathname.startsWith(href);
         return (
           <Link
             key={href}
