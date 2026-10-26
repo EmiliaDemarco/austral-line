@@ -9,6 +9,7 @@ const pestanas = [
   { href: "/alumnos", label: "Proyectos" },
   { href: "/alumnos/perfil", label: "Mi perfil" },
   { href: "/alumnos/afines", label: "Compañeros afines" },
+  { href: "/alumnos/hitos", label: "Próximos hitos" },
 ];
 
 export function SubNav() {
