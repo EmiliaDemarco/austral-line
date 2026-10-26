@@ -14,15 +14,17 @@ const diasEntre = (desde: Date, hasta: Date) =>
 const cuandoFalta = (dias: number) =>
   dias === 0 ? "Hoy" : dias === 1 ? "Mañana" : dias < 0 ? `Hace ${-dias} ${dias === -1 ? "día" : "días"}` : `En ${dias} días`;
 
+const conMayuscula = (texto: string) => texto.charAt(0).toUpperCase() + texto.slice(1);
+
 const fechaLarga = (iso: string) =>
-  new Date(iso).toLocaleString("es-AR", {
+  conMayuscula(new Date(iso).toLocaleString("es-AR", {
     weekday: "long",
     day: "numeric",
     month: "long",
     hour: "2-digit",
     minute: "2-digit",
     timeZone: ZONA,
-  });
+  }));
 
 export default async function ProximosHitos() {
   await requireRol("alumno");
@@ -41,7 +43,7 @@ export default async function ProximosHitos() {
 
   const detalle = (e: (typeof conDias)[number]) => (
     <p className="text-sm text-[#666]">
-      <span className="first-letter:uppercase">{fechaLarga(e.inicio)}</span>
+      {fechaLarga(e.inicio)}
       {e.lugar && <> · {e.lugar}</>}
     </p>
   );
