@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Estrellas } from "../_components/estrellas";
+import { BotonGuardar } from "../_components/boton-guardar";
 
 const MINIMO_CALIFICADOS = 4;
 
@@ -152,7 +152,7 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
         </section>
 
         <div className="flex items-center gap-4">
-          <Button type="submit">Guardar perfil</Button>
+          <BotonGuardar minimo={MINIMO_CALIFICADOS} />
           <Suspense><Aviso searchParams={searchParams} /></Suspense>
         </div>
       </form>
