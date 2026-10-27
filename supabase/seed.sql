@@ -166,3 +166,11 @@ from (values
 ) as v(email, interes, estrellas)
 join personas pe on pe.email = v.email
 join alumnos_intereses_maestro m on m.nombre = v.interes;
+
+-- GRUPO ALUMNOS: grupos de ejemplo para ver la interdisciplinariedad en "Proyectos".
+-- Elena (Administración) se suma a Tutorly con Bruno (Negocios Digitales): interdisciplinario.
+-- Carla (Marketing) queda sola en Reciclá: una sola carrera, con sugerencias. Ana (AgroSense) no tiene perfil.
+insert into proyecto_integrantes (proyecto_id, persona_id)
+select p.id, pe.id from proyectos p, personas pe
+where p.nombre = 'Tutorly' and pe.email = 'elena@alumnos.austral.edu.ar'
+on conflict do nothing;
