@@ -9,6 +9,7 @@ const pestanas = [
   { href: "/alumnos", label: "Proyectos" },
   { href: "/alumnos/perfil", label: "Mi perfil" },
   { href: "/alumnos/afines", label: "Compañeros afines" },
+  { href: "/alumnos/ideas", label: "Banco de ideas" },
 ];
 
 export function SubNav() {
@@ -16,7 +17,7 @@ export function SubNav() {
   return (
     <nav className="mb-8 flex gap-6 overflow-x-auto border-b">
       {pestanas.map(({ href, label }) => {
-        const activa = pathname === href;
+        const activa = href === "/alumnos" ? pathname === href : pathname.startsWith(href);
         return (
           <Link
             key={href}
