@@ -43,6 +43,7 @@ const fecha = (iso: string) =>
 async function Aviso({ searchParams }: Pick<PageProps<"/alumnos/ideas/[ideaId]">, "searchParams">) {
   const { error, ok } = await searchParams;
   if (error) return <p className="mb-6 border bg-card px-4 py-3 text-sm text-destructive">{error}</p>;
+  if (ok === "editada") return <p className="mb-6 border bg-card px-4 py-3 text-sm">Cambios guardados.</p>;
   if (ok === "reportado") return <p className="mb-6 border bg-card px-4 py-3 text-sm">Gracias, el reporte les llegó a los profesores.</p>;
   return null;
 }
@@ -127,30 +128,9 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
         <h1 className="font-serif text-3xl">{idea.titulo}</h1>
         <p className="text-sm text-[#666]">Propuesta por {autorIdea} · {fecha(idea.created_at)}</p>
         <p className="mt-2 whitespace-pre-line">{idea.descripcion}</p>
-        {esAlumno && !esAutor && (
-          <Reportar ideaId={idea.id} volver={volver} yaReportado={reportado.has("idea")} que="esta idea" />
-        )}
-      </header>
-
-      <Suspense><Aviso searchParams={searchParams} /></Suspense>
-
-      {/* Contexto ampliado */}
-      <section className="mb-10 grid gap-6 border-t pt-8">
-        <h2 className="font-serif text-xl">Contexto</h2>
-        {contextoCargado.length === 0 && !puedoEditar && (
-          <p className="text-sm text-[#666]">Quien propuso la idea todavía no sumó más contexto. Podés preguntarle abajo.</p>
-        )}
-        {contextoCargado.map(({ campo, titulo }) => (
-          <div key={campo} className="grid gap-1">
-            <h3 className="text-sm font-medium">{titulo}</h3>
-            <p className="text-sm whitespace-pre-line text-[#666]">{idea[campo]}</p>
-          </div>
-        ))}
         {puedoEditar && (
-          <details className="border bg-card p-6" open={contextoCargado.length === 0}>
-            <summary className="cursor-pointer text-sm font-medium">
-              {contextoCargado.length === 0 ? "Sumá contexto para que otros entiendan mejor el problema" : "Editar idea"}
-            </summary>
+          <details className="mt-2 border bg-card p-6">
+            <summary className="cursor-pointer text-sm font-medium">Editar idea</summary>
             <form action={editarIdea} className="mt-4 grid gap-4">
               <input type="hidden" name="idea_id" value={idea.id} />
               <input type="hidden" name="volver" value={volver} />
@@ -178,6 +158,28 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
               <div><Button type="submit" size="sm">Guardar cambios</Button></div>
             </form>
           </details>
+        )}
+        {esAlumno && !esAutor && (
+          <Reportar ideaId={idea.id} volver={volver} yaReportado={reportado.has("idea")} que="esta idea" />
+        )}
+      </header>
+
+      <Suspense><Aviso searchParams={searchParams} /></Suspense>
+
+      {/* Contexto ampliado */}
+      <section className="mb-10 grid gap-6 border-t pt-8">
+        <h2 className="font-serif text-xl">Contexto</h2>
+        {contextoCargado.length === 0 && !puedoEditar && (
+          <p className="text-sm text-[#666]">Quien propuso la idea todavía no sumó más contexto. Podés preguntarle abajo.</p>
+        )}
+        {contextoCargado.map(({ campo, titulo }) => (
+          <div key={campo} className="grid gap-1">
+            <h3 className="text-sm font-medium">{titulo}</h3>
+            <p className="text-sm whitespace-pre-line text-[#666]">{idea[campo]}</p>
+          </div>
+        ))}
+        {contextoCargado.length === 0 && puedoEditar && (
+          <p className="text-sm text-[#666]">Todavía no hay contexto. Sumalo desde “Editar idea”, arriba.</p>
         )}
       </section>
 

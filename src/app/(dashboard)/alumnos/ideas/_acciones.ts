@@ -97,6 +97,7 @@ export async function editarIdea(formData: FormData) {
   if (error) volverCon(formData, `No se pudo guardar la idea: ${error.message}`);
   if (!data?.length) volverCon(formData, "Solo quien propuso la idea o los profesores pueden editarla.");
   refrescar(formData);
+  redirect(`${destino(formData)}?ok=editada`);
 }
 
 // Borrar la idea. El autor solo si nadie marcó "Me interesa"; los profesores siempre (RLS).
