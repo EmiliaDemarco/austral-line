@@ -137,6 +137,90 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"austral_documentos": {
+                  Row: {
+                    "bytes": number,"created_at": string,"id": string,"nombre": string,"proyecto_id": string,"ruta": string,"subido_por": string | null,"tipo": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "bytes": number,"created_at"?: string,"id"?: string,"nombre": string,"proyecto_id": string,"ruta": string,"subido_por"?: string | null,"tipo": string
+                  }
+                  Update: {
+                    "bytes"?: number,"created_at"?: string,"id"?: string,"nombre"?: string,"proyecto_id"?: string,"ruta"?: string,"subido_por"?: string | null,"tipo"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "austral_documentos_proyecto_id_fkey"
+      columns: ["proyecto_id"]
+isOneToOne: false
+      referencedRelation: "proyectos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "austral_documentos_subido_por_fkey"
+      columns: ["subido_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"austral_material_usos": {
+                  Row: {
+                    "created_at": string,"id": number,"jurado_id": string,"material_id": string,"tipo": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: never,"jurado_id": string,"material_id": string,"tipo": string
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: never,"jurado_id"?: string,"material_id"?: string,"tipo"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "austral_material_usos_jurado_id_fkey"
+      columns: ["jurado_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "austral_material_usos_material_id_fkey"
+      columns: ["material_id"]
+isOneToOne: false
+      referencedRelation: "austral_materiales"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"austral_materiales": {
+                  Row: {
+                    "aprobado_at": string | null,"aprobado_por": string | null,"aviso": string | null,"contexto": string | null,"documentos": (string)[],"estado": string,"fuentes": (string)[],"generado_at": string | null,"generado_por": string | null,"guion": string | null,"id": string,"problematica": string | null,"proyecto_id": string,"sector": string | null,"segundos_generacion": number | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "aprobado_at"?: string | null,"aprobado_por"?: string | null,"aviso"?: string | null,"contexto"?: string | null,"documentos"?: (string)[],"estado"?: string,"fuentes"?: (string)[],"generado_at"?: string | null,"generado_por"?: string | null,"guion"?: string | null,"id"?: string,"problematica"?: string | null,"proyecto_id": string,"sector"?: string | null,"segundos_generacion"?: number | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "aprobado_at"?: string | null,"aprobado_por"?: string | null,"aviso"?: string | null,"contexto"?: string | null,"documentos"?: (string)[],"estado"?: string,"fuentes"?: (string)[],"generado_at"?: string | null,"generado_por"?: string | null,"guion"?: string | null,"id"?: string,"problematica"?: string | null,"proyecto_id"?: string,"sector"?: string | null,"segundos_generacion"?: number | null,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "austral_materiales_aprobado_por_fkey"
+      columns: ["aprobado_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "austral_materiales_generado_por_fkey"
+      columns: ["generado_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "austral_materiales_proyecto_id_fkey"
+      columns: ["proyecto_id"]
+isOneToOne: true
+      referencedRelation: "proyectos"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"eventos": {
                   Row: {
                     "created_at": string,"fin": string | null,"id": string,"inicio": string,"lugar": string | null,"nombre": string,"tipo": string
@@ -715,6 +799,15 @@ isOneToOne: false
           Functions: {
             "alumnos_guardar_perfil":
 { Args: { "p_busca_equipo": boolean,"p_carrera_id": number,"p_intereses": Json,"p_sobre_mi": string }; Returns: undefined
+                           },
+"austral_me_toca":
+{ Args: { "p_proyecto": string }; Returns: boolean
+                           },
+"austral_mis_proyectos":
+{ Args: Record<PropertyKey, never>; Returns: string[]
+                           },
+"austral_yo":
+{ Args: Record<PropertyKey, never>; Returns: string
                            },
 "jurado_criterios_aplicar":
 { Args: { "p_evento": string,"p_origen"?: string }; Returns: number
