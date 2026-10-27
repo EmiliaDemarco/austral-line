@@ -21,6 +21,14 @@ async function preparar(formData: FormData) {
 
 const limpiar = (formData: FormData, campo: string) => String(formData.get(campo) ?? "").trim().replace(/\s+/g, " ");
 
+// Mismos límites que la pantalla y la base: nombre hasta 60 letras, descripción hasta 200.
+const NOMBRE_MAX = 60;
+const DESCRIPCION_MAX = 200;
+function revisarLargo(ambito: string, nombre: string, descripcion: string | null) {
+  if (nombre.length > NOMBRE_MAX) volver(ambito, "error", `El nombre puede tener hasta ${NOMBRE_MAX} letras.`);
+  if (descripcion && descripcion.length > DESCRIPCION_MAX) volver(ambito, "error", `La descripción puede tener hasta ${DESCRIPCION_MAX} letras.`);
+}
+
 type Cliente = Awaited<ReturnType<typeof createClient>>;
 
 // Los criterios de un ámbito, en orden: { id, nombre, orden }.
@@ -41,6 +49,7 @@ export async function crearCriterio(formData: FormData) {
   const nombre = limpiar(formData, "nombre");
   const descripcion = limpiar(formData, "descripcion") || null;
   if (!nombre) volver(ambito, "error", "Poné un nombre para el criterio.");
+  revisarLargo(ambito, nombre, descripcion);
 
   const existentes = await listar(supabase, ambito);
   if (existentes.some((c) => c.nombre.toLowerCase() === nombre.toLowerCase())) volver(ambito, "error", `Ya hay un criterio "${nombre}" en esta lista.`);
@@ -66,6 +75,7 @@ export async function guardarCriterio(formData: FormData) {
   const nombre = limpiar(formData, "nombre");
   const descripcion = limpiar(formData, "descripcion") || null;
   if (!nombre) volver(ambito, "error", "El criterio necesita un nombre.");
+  revisarLargo(ambito, nombre, descripcion);
 
   const lista = await listar(supabase, ambito);
   if (lista.some((c) => c.id !== id && c.nombre.toLowerCase() === nombre.toLowerCase())) volver(ambito, "error", `Ya hay un criterio "${nombre}" en esta lista.`);

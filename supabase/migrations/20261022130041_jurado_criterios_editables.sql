@@ -12,6 +12,11 @@
 -- Lista base: los criterios de partida. Nunca se puntúan directamente: los eventos usan copias.
 alter table jurado_criterios add column es_base boolean not null default false;
 
+-- Largo máximo, igual que en la pantalla (nombre hasta 60, descripción hasta 200). "not valid": no revisa los criterios
+-- que ya existen, solo los que se crean o cambian desde ahora.
+alter table jurado_criterios add constraint jurado_criterios_largo
+  check (char_length(btrim(nombre)) between 1 and 60 and char_length(coalesce(descripcion, '')) <= 200) not valid;
+
 -- Qué criterios se puntúan en cada evento, y en qué orden.
 create table jurado_evento_criterios (
   evento_id uuid not null references eventos(id) on delete cascade,

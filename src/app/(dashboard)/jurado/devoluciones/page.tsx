@@ -132,8 +132,11 @@ export default async function Devoluciones({ searchParams }: PageProps<"/jurado/
                           <TableCell className="hidden whitespace-normal text-sm sm:table-cell">
                             {q.estado === "ausente" ? "—" : (
                               <>
-                                <span>{q.jurados.length - q.faltan.length}/{q.jurados.length} completas</span>
+                                <span>{q.jurados.length - q.noHabilitados.length - q.faltan.length}/{q.jurados.length - q.noHabilitados.length} completas</span>
                                 {q.faltan.length > 0 && <span className="block text-[#666]">Falta: {q.faltan.map((j) => j.nombre).join(", ")}</span>}
+                                {q.noHabilitados.map((j) => (
+                                  <span key={j.id} className="block text-[#666]">No habilitado: {j.nombre}. {j.motivo}.</span>
+                                ))}
                               </>
                             )}
                           </TableCell>

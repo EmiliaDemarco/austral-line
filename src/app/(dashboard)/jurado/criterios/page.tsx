@@ -53,8 +53,14 @@ export default async function Criterios({ searchParams }: PageProps<"/jurado/cri
     publicado = !!pub.data;
   }
   const fijo = evaluaciones > 0 || publicado;
+  // Solo las notas de este evento: las cargadas antes de separar por evento no cuentan para ninguno.
   const notas = new Map(await Promise.all(criterios.map(async (c) => {
-    const { count, error: errorNotas } = await supabase.from("jurado_puntajes").select("criterio_id", { count: "exact", head: true }).eq("criterio_id", c.id);
+    if (!evento) return [c.id, 0] as const;
+    const { count, error: errorNotas } = await supabase
+      .from("jurado_puntajes")
+      .select("criterio_id, jurado_evaluaciones!inner(evento_id)", { count: "exact", head: true })
+      .eq("criterio_id", c.id)
+      .eq("jurado_evaluaciones.evento_id", evento.id);
     if (errorNotas) throw errorNotas;
     return [c.id, count ?? 0] as const;
   })));

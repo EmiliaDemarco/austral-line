@@ -2,6 +2,7 @@
 import type { createClient } from "@/lib/supabase/server";
 import { promedio } from "../_lib";
 import { criteriosDelEvento } from "../_criterios";
+import { evaluacionesBloqueadas, motivoBloqueo } from "../_eventos";
 
 type Cliente = Awaited<ReturnType<typeof createClient>>;
 
@@ -74,6 +75,7 @@ export async function cargarEvento(supabase: Cliente, eventoId: string) {
     return [q.id, data] as const;
   }));
   const huellaActual = new Map(huellas);
+  const bloqueos = await evaluacionesBloqueadas(supabase, eventoId);
 
   const resumen = equipos.map((q) => {
     const evs = evaluaciones.data!.filter((e) => e.proyecto_id === q.id);
@@ -96,7 +98,11 @@ export async function cargarEvento(supabase: Cliente, eventoId: string) {
       // Los textos originales que el admin vio al revisar (tabla solo para admin).
       vistos: vistos.data!.find((v) => v.proyecto_id === q.id) ?? null,
       evaluaciones: evs,
-      faltan: q.jurados.filter((j) => !completas.some((e) => e.jurado_id === j.id)),
+      // Pendientes: jurados habilitados sin evaluación completa. Los no habilitados (ya lo evaluaron en otro evento) van aparte.
+      faltan: q.jurados.filter((j) => !bloqueos.has(`${q.id}:${j.id}`) && !completas.some((e) => e.jurado_id === j.id)),
+      noHabilitados: q.jurados
+        .filter((j) => bloqueos.has(`${q.id}:${j.id}`))
+        .map((j) => ({ ...j, motivo: motivoBloqueo(bloqueos.get(`${q.id}:${j.id}`) ?? null, false) })),
       // Vista previa de las notas: la base las vuelve a calcular igual al guardar la devolución.
       general: promedio(puntajes.map((p) => p.puntaje)),
       porCriterio: criterios.map((c) => ({
