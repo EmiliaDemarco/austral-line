@@ -63,6 +63,64 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"alumnos_entregas": {
+                  Row: {
+                    "archivo_path": string,"created_at": string,"evento_id": string,"id": string,"nombre_archivo": string,"nota": string | null,"proyecto_id": string,"subida_por": string | null,"tamano_bytes": number,"version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archivo_path": string,"created_at"?: string,"evento_id": string,"id"?: string,"nombre_archivo": string,"nota"?: string | null,"proyecto_id": string,"subida_por"?: string | null,"tamano_bytes": number,"version": number
+                  }
+                  Update: {
+                    "archivo_path"?: string,"created_at"?: string,"evento_id"?: string,"id"?: string,"nombre_archivo"?: string,"nota"?: string | null,"proyecto_id"?: string,"subida_por"?: string | null,"tamano_bytes"?: number,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_entregas_evento_id_fkey"
+      columns: ["evento_id"]
+isOneToOne: false
+      referencedRelation: "eventos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_proyecto_id_fkey"
+      columns: ["proyecto_id"]
+isOneToOne: false
+      referencedRelation: "proyectos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_subida_por_fkey"
+      columns: ["subida_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"alumnos_entregas_devoluciones": {
+                  Row: {
+                    "autor_id": string | null,"created_at": string,"entrega_id": string,"id": string,"texto": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "autor_id"?: string | null,"created_at"?: string,"entrega_id": string,"id"?: string,"texto": string
+                  }
+                  Update: {
+                    "autor_id"?: string | null,"created_at"?: string,"entrega_id"?: string,"id"?: string,"texto"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_entregas_devoluciones_autor_id_fkey"
+      columns: ["autor_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_devoluciones_entrega_id_fkey"
+      columns: ["entrega_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_entregas"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"alumnos_ideas": {
                   Row: {
                     "a_quien_le_pasa": string | null,"autor_id": string | null,"como_seria_resuelto": string | null,"created_at": string,"descripcion": string,"estado": string,"id": string,"interes_id": number | null,"que_se_intento": string | null,"titulo": string,"updated_at": string
@@ -831,6 +889,15 @@ isOneToOne: false
           Functions: {
             "alumnos_guardar_perfil":
 { Args: { "p_busca_equipo": boolean,"p_carrera_id": number,"p_intereses": Json,"p_sobre_mi": string }; Returns: undefined
+                           },
+"alumnos_soy_integrante":
+{ Args: { "p_proyecto": string }; Returns: boolean
+                           },
+"alumnos_soy_mentor":
+{ Args: { "p_proyecto": string }; Returns: boolean
+                           },
+"alumnos_yo":
+{ Args: never; Returns: string
                            },
 "jurado_criterios_aplicar":
 { Args: { "p_evento": string,"p_origen"?: string }; Returns: number
