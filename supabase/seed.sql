@@ -166,3 +166,46 @@ from (values
 ) as v(email, interes, estrellas)
 join personas pe on pe.email = v.email
 join alumnos_intereses_maestro m on m.nombre = v.interes;
+
+-- GRUPO ALUMNOS: ideas de ejemplo para el banco de problemas e ideas.
+insert into alumnos_ideas (autor_id, titulo, descripcion, interes_id, estado)
+select pe.id, v.titulo, v.descripcion, m.id, v.estado
+from (values
+  ('admin@austral.edu.ar', 'Trazabilidad para pequeños productores',
+    'Los productores chicos no pueden demostrar el origen de lo que venden y pierden acceso a mercados que lo exigen. ¿Cómo darles trazabilidad a bajo costo?',
+    'Agro y alimentos', 'disponible'),
+  ('diego@alumnos.austral.edu.ar', 'Alquiler de maquinaria agrícola entre vecinos',
+    'Muchas máquinas pasan la mayor parte del año paradas. Una plataforma para que productores vecinos se las alquilen entre sí.',
+    'Agro y alimentos', 'disponible'),
+  ('carla@alumnos.austral.edu.ar', 'Turnos médicos en el interior',
+    'En pueblos chicos conseguir un turno con un especialista lleva semanas y viajes. Idea: coordinar visitas de especialistas según la demanda acumulada.',
+    'Salud', 'disponible'),
+  ('admin@austral.edu.ar', 'Finanzas personales para estudiantes',
+    'Los estudiantes que empiezan a trabajar no saben cómo ahorrar o invertir sus primeros sueldos.',
+    'Finanzas y fintech', 'tomada')
+) as v(email, titulo, descripcion, tema, estado)
+join personas pe on pe.email = v.email
+join alumnos_intereses_maestro m on m.nombre = v.tema;
+
+insert into alumnos_ideas_interesados (idea_id, persona_id)
+select i.id, pe.id
+from alumnos_ideas i join personas pe on pe.email in ('elena@alumnos.austral.edu.ar', 'diego@alumnos.austral.edu.ar')
+where i.titulo = 'Trazabilidad para pequeños productores';
+
+-- GRUPO ALUMNOS: contexto y una conversación de ejemplo en una idea del banco.
+update alumnos_ideas set
+  a_quien_le_pasa = 'Productores de menos de 50 hectáreas que venden a acopiadores o en ferias.',
+  que_se_intento = 'Certificaciones privadas, pero son caras y piden mucho papeleo.',
+  como_seria_resuelto = 'Que un productor pueda mostrar el origen de un lote con el celular, sin pagar una certificación.'
+where titulo = 'Trazabilidad para pequeños productores';
+
+with pregunta as (
+  insert into alumnos_ideas_mensajes (idea_id, autor_id, texto)
+  select i.id, pe.id, '¿Hay algún productor que conozcan para entrevistar?'
+  from alumnos_ideas i, personas pe
+  where i.titulo = 'Trazabilidad para pequeños productores' and pe.email = 'elena@alumnos.austral.edu.ar'
+  returning id, idea_id
+)
+insert into alumnos_ideas_mensajes (idea_id, autor_id, respuesta_a, texto)
+select pregunta.idea_id, pe.id, pregunta.id, 'Sí, mi familia trabaja con varios en San Pedro. Les puedo preguntar.'
+from pregunta, personas pe where pe.email = 'diego@alumnos.austral.edu.ar';
