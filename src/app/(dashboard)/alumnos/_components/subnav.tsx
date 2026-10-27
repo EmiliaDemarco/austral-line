@@ -10,6 +10,7 @@ const pestanas = [
   { href: "/alumnos/perfil", label: "Mi perfil" },
   { href: "/alumnos/afines", label: "Compañeros afines" },
   { href: "/alumnos/ideas", label: "Banco de ideas" },
+  { href: "/alumnos/hitos", label: "Próximos hitos" },
 ];
 
 // Solo la ven los profesores (rol admin).
