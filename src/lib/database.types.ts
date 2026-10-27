@@ -417,14 +417,14 @@ isOneToOne: false
                   ]
                 },"mentores_resumenes": {
                   Row: {
-                    "asunto": string,"aviso": string | null,"aviso_util": boolean | null,"con_ia": boolean,"created_at": string,"email": string,"error": string | null,"estado": string,"html": string,"id": string,"leido_at": string | null,"programado_para": string | null,"resend_id": string | null,"reunion_id": string
+                    "asunto": string,"aviso": string | null,"aviso_mail_at": string | null,"aviso_util": boolean | null,"con_ia": boolean,"created_at": string,"email": string,"error": string | null,"estado": string,"html": string,"id": string,"le_sirvio": boolean | null,"leido_at": string | null,"minutos_ahorrados": number | null,"programado_para": string | null,"resend_id": string | null,"reunion_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "asunto": string,"aviso"?: string | null,"aviso_util"?: boolean | null,"con_ia": boolean,"created_at"?: string,"email": string,"error"?: string | null,"estado": string,"html": string,"id"?: string,"leido_at"?: string | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id": string
+                    "asunto": string,"aviso"?: string | null,"aviso_mail_at"?: string | null,"aviso_util"?: boolean | null,"con_ia": boolean,"created_at"?: string,"email": string,"error"?: string | null,"estado": string,"html": string,"id"?: string,"le_sirvio"?: boolean | null,"leido_at"?: string | null,"minutos_ahorrados"?: number | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id": string
                   }
                   Update: {
-                    "asunto"?: string,"aviso"?: string | null,"aviso_util"?: boolean | null,"con_ia"?: boolean,"created_at"?: string,"email"?: string,"error"?: string | null,"estado"?: string,"html"?: string,"id"?: string,"leido_at"?: string | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id"?: string
+                    "asunto"?: string,"aviso"?: string | null,"aviso_mail_at"?: string | null,"aviso_util"?: boolean | null,"con_ia"?: boolean,"created_at"?: string,"email"?: string,"error"?: string | null,"estado"?: string,"html"?: string,"id"?: string,"le_sirvio"?: boolean | null,"leido_at"?: string | null,"minutos_ahorrados"?: number | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id"?: string
                   }
                   Relationships: [
                     {
