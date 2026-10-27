@@ -897,7 +897,7 @@ isOneToOne: false
 { Args: { "p_proyecto": string }; Returns: boolean
                            },
 "alumnos_yo":
-{ Args: never; Returns: string
+{ Args: Record<PropertyKey, never>; Returns: string
                            },
 "jurado_criterios_aplicar":
 { Args: { "p_evento": string,"p_origen"?: string }; Returns: number
