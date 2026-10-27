@@ -68,14 +68,25 @@ export async function cambiarEstado(formData: FormData) {
   refrescar(formData);
 }
 
-export async function guardarContexto(formData: FormData) {
+// Editar la idea: título, descripción, tema y contexto. Solo el autor o los profesores (RLS).
+export async function editarIdea(formData: FormData) {
   await requireRol("alumno");
   const ideaId = String(formData.get("idea_id"));
+  const titulo = String(formData.get("titulo") ?? "").trim();
+  const descripcion = String(formData.get("descripcion") ?? "").trim();
+  const interesId = Number(formData.get("interes_id") ?? 0);
+  if (titulo.length < 3) volverCon(formData, "El título tiene que tener al menos 3 caracteres.");
+  if (descripcion.length < 10) volverCon(formData, "Contá un poco más en la descripción (al menos 10 caracteres).");
+  if (!interesId) volverCon(formData, "Elegí el tema de la idea.");
   const texto = (campo: string) => String(formData.get(campo) ?? "").trim() || null;
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("alumnos_ideas")
     .update({
+      titulo,
+      descripcion,
+      interes_id: interesId,
       a_quien_le_pasa: texto("a_quien_le_pasa"),
       que_se_intento: texto("que_se_intento"),
       como_seria_resuelto: texto("como_seria_resuelto"),
@@ -83,9 +94,41 @@ export async function guardarContexto(formData: FormData) {
     })
     .eq("id", ideaId)
     .select("id");
-  if (error) volverCon(formData, `No se pudo guardar el contexto: ${error.message}`);
-  if (!data?.length) volverCon(formData, "Solo quien propuso la idea o los profesores pueden editar el contexto.");
+  if (error) volverCon(formData, `No se pudo guardar la idea: ${error.message}`);
+  if (!data?.length) volverCon(formData, "Solo quien propuso la idea o los profesores pueden editarla.");
   refrescar(formData);
+}
+
+// Borrar la idea. El autor solo si nadie marcó "Me interesa"; los profesores siempre (RLS).
+export async function borrarIdea(formData: FormData) {
+  await requireRol("alumno");
+  const ideaId = String(formData.get("idea_id"));
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("alumnos_ideas").delete().eq("id", ideaId).select("id");
+  if (error) volverCon(formData, `No se pudo borrar la idea: ${error.message}`);
+  if (!data?.length) {
+    volverCon(formData, "No se puede borrar: alguien ya marcó “Me interesa”. Podés editarla o marcarla como tomada.");
+  }
+  revalidatePath("/alumnos", "layout");
+  redirect("/alumnos/ideas?ok=borrada");
+}
+
+// Reportar una idea (o un mensaje de la idea) como inapropiado. Queda visible hasta que los profesores decidan.
+export async function reportar(formData: FormData) {
+  const persona = await requireRol("alumno");
+  const ideaId = String(formData.get("idea_id"));
+  const mensajeId = String(formData.get("mensaje_id") ?? "") || null;
+  const motivo = String(formData.get("motivo") ?? "").trim();
+  if (motivo.length < 3) volverCon(formData, "Contanos brevemente por qué lo reportás.");
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("alumnos_ideas_reportes")
+    .insert({ idea_id: ideaId, mensaje_id: mensajeId, persona_id: persona.id, motivo });
+  if (error?.code === "23505") volverCon(formData, "Ya lo habías reportado. Los profesores lo van a revisar.");
+  if (error) volverCon(formData, `No se pudo enviar el reporte: ${error.message}`);
+  revalidatePath("/alumnos/panel");
+  redirect(`${destino(formData)}?ok=reportado`);
 }
 
 export async function publicarMensaje(formData: FormData) {

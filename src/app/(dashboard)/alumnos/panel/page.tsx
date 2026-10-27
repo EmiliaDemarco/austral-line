@@ -1,11 +1,15 @@
 // GRUPO ALUMNOS — "Panel de profesores": métricas del armado de equipos (solo profesores / rol admin).
 // Responde a las métricas de éxito del Agente de Armado de Grupos: cuántos alumnos cargaron su perfil,
 // cuántos ya están en un proyecto, si los proyectos son interdisciplinarios y cómo se usa el banco de ideas.
+import { Suspense } from "react";
 import Link from "next/link";
 import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+import { borrarReportado, dejarVisible } from "./_acciones";
 
 const pct = (parte: number, total: number) => (total ? Math.round((parte / total) * 100) : 0);
 
@@ -41,11 +45,16 @@ function Barras({ filas, unidad }: { filas: { nombre: string; valor: number }[];
   );
 }
 
-export default async function PanelDeProfesores() {
+async function Aviso({ searchParams }: Pick<PageProps<"/alumnos/panel">, "searchParams">) {
+  const { error } = await searchParams;
+  return error ? <p className="mb-4 border bg-card px-4 py-3 text-sm text-destructive">{error}</p> : null;
+}
+
+export default async function PanelDeProfesores({ searchParams }: PageProps<"/alumnos/panel">) {
   await requireRol(); // sin roles = solo admin (profesores)
   const supabase = await createClient();
 
-  const [alumnos, perfiles, carreras, maestroCarreras, intereses, temas, integrantes, ideas, interesados, mensajes] =
+  const [alumnos, perfiles, carreras, maestroCarreras, intereses, temas, integrantes, ideas, interesados, mensajes, reportes] =
     await Promise.all([
       supabase.from("personas").select("id, nombre, email").eq("rol", "alumno").order("nombre"),
       supabase.from("alumnos_perfiles").select("persona_id, busca_equipo"),
@@ -57,8 +66,15 @@ export default async function PanelDeProfesores() {
       supabase.from("alumnos_ideas").select("id, titulo, estado, created_at").order("created_at", { ascending: false }),
       supabase.from("alumnos_ideas_interesados").select("idea_id"),
       supabase.from("alumnos_ideas_mensajes").select("idea_id"),
+      supabase
+        .from("alumnos_ideas_reportes")
+        .select(
+          "id, idea_id, mensaje_id, motivo, created_at, quien:personas!alumnos_ideas_reportes_persona_id_fkey(nombre), idea:alumnos_ideas!alumnos_ideas_reportes_idea_id_fkey(titulo), mensaje:alumnos_ideas_mensajes!alumnos_ideas_reportes_mensaje_id_fkey(texto)",
+        )
+        .eq("resuelto", false)
+        .order("created_at"),
     ]);
-  for (const r of [alumnos, perfiles, carreras, maestroCarreras, intereses, temas, integrantes, ideas, interesados, mensajes]) {
+  for (const r of [alumnos, perfiles, carreras, maestroCarreras, intereses, temas, integrantes, ideas, interesados, mensajes, reportes]) {
     if (r.error) throw r.error;
   }
 
@@ -109,6 +125,15 @@ export default async function PanelDeProfesores() {
   const filasIdeas = ideas.data!
     .map((i) => ({ ...i, interesados: interesadosDe.get(i.id) ?? 0, mensajes: mensajesDe.get(i.id) ?? 0 }))
     .sort((a, b) => b.interesados - a.interesados);
+  // Reportes pendientes, agrupados por lo reportado (una idea o un mensaje).
+  const reportados = new Map<string, { ideaId: string; mensajeId: string | null; titulo: string; texto: string | null; motivos: { quien: string; motivo: string }[] }>();
+  for (const r of reportes.data!) {
+    const clave = r.mensaje_id ?? r.idea_id;
+    const item = reportados.get(clave) ?? { ideaId: r.idea_id, mensajeId: r.mensaje_id, titulo: r.idea.titulo, texto: r.mensaje?.texto ?? null, motivos: [] };
+    item.motivos.push({ quien: r.quien.nombre, motivo: r.motivo });
+    reportados.set(clave, item);
+  }
+
   const ideasSinInteres = filasIdeas.filter((i) => i.estado === "disponible" && i.interesados === 0).length;
 
   return (
@@ -118,6 +143,61 @@ export default async function PanelDeProfesores() {
         Cómo viene el armado de equipos: perfiles cargados, alumnos ya en un proyecto, interdisciplinariedad y uso del
         banco de ideas. Solo lo ven los profesores.
       </p>
+
+      <section id="reportes" className="mb-10 grid gap-3">
+        <h2 className="font-serif text-lg">Reportes del banco de ideas ({reportados.size})</h2>
+        <Suspense><Aviso searchParams={searchParams} /></Suspense>
+        {reportados.size === 0 ? (
+          <p className="text-sm text-[#666]">No hay nada reportado para revisar.</p>
+        ) : (
+          <>
+            <p className="text-sm text-[#666]">
+              Ideas o mensajes que algún alumno marcó como inapropiados. Siguen visibles hasta que decidan: borrarlos o
+              dejarlos. Quien escribió el contenido no sabe quién lo reportó.
+            </p>
+            <ul className="grid gap-3">
+              {[...reportados.values()].map((r) => (
+                <li key={r.mensajeId ?? r.ideaId} className="grid gap-3 border bg-card p-5">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <Badge variant="outline">{r.mensajeId ? "Mensaje" : "Idea"}</Badge>
+                    <span className="text-[#666]">{r.mensajeId ? "en la idea" : ""}</span>
+                    <Link href={`/alumnos/ideas/${r.ideaId}`} className="underline underline-offset-4 hover:text-[#666]">{r.titulo}</Link>
+                  </div>
+                  {r.texto && <p className="border-l-2 pl-3 text-sm italic">“{r.texto}”</p>}
+                  <ul className="grid gap-1 text-sm">
+                    {r.motivos.map((m, i) => (
+                      <li key={i}><span className="text-[#666]">{m.quien}:</span> {m.motivo}</li>
+                    ))}
+                  </ul>
+                  <div className="flex flex-wrap gap-2">
+                    <form action={dejarVisible}>
+                      <input type="hidden" name="idea_id" value={r.ideaId} />
+                      {r.mensajeId && <input type="hidden" name="mensaje_id" value={r.mensajeId} />}
+                      <Button type="submit" size="sm" variant="outline">Dejar visible</Button>
+                    </form>
+                    <details>
+                      <summary className="cursor-pointer px-2 py-1 text-sm text-[#666] hover:text-destructive">
+                        {r.mensajeId ? "Borrar mensaje" : "Borrar idea"}
+                      </summary>
+                      <form action={borrarReportado} className="mt-2 grid gap-2 border bg-background p-3 text-sm">
+                        <input type="hidden" name="idea_id" value={r.ideaId} />
+                        {r.mensajeId && <input type="hidden" name="mensaje_id" value={r.mensajeId} />}
+                        <p>
+                          {r.mensajeId
+                            ? "Se borra el mensaje y sus respuestas."
+                            : "Se borra la idea con sus interesados y sus preguntas y respuestas."}{" "}
+                          No se puede deshacer.
+                        </p>
+                        <div><Button type="submit" size="sm" variant="destructive">Sí, borrar</Button></div>
+                      </form>
+                    </details>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
 
       <section className="mb-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Indicador titulo="Completaron su perfil" valor={`${pct(conPerfil.size, total)}%`} detalle={`${conPerfil.size} de ${total} alumnos`} />

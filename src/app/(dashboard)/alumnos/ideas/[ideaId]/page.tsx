@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { cambiarEstado, cambiarInteres, guardarContexto, publicarMensaje } from "../_acciones";
+import { borrarIdea, cambiarEstado, cambiarInteres, editarIdea, publicarMensaje, reportar } from "../_acciones";
 
 const CONTEXTO = [
   { campo: "a_quien_le_pasa", titulo: "¿A quién le pasa?" },
@@ -16,12 +16,35 @@ const CONTEXTO = [
   { campo: "como_seria_resuelto", titulo: "¿Cómo nos daríamos cuenta de que está resuelto?" },
 ] as const;
 
+const campoTexto = "border bg-background px-2.5 py-2 text-sm outline-none focus-visible:border-ring";
+
+// "Reportar": queda visible y les llega a los profesores en su panel, que deciden si se borra.
+function Reportar(props: { ideaId: string; mensajeId?: string; volver: string; yaReportado: boolean; que: string }) {
+  if (props.yaReportado) return <p className="text-xs text-[#666]">Reportaste {props.que}. Los profesores lo van a revisar.</p>;
+  return (
+    <details className="text-xs">
+      <summary className="cursor-pointer text-[#666] hover:text-primary">Reportar {props.que}</summary>
+      <form action={reportar} className="mt-2 grid max-w-md gap-2">
+        <input type="hidden" name="idea_id" value={props.ideaId} />
+        {props.mensajeId && <input type="hidden" name="mensaje_id" value={props.mensajeId} />}
+        <input type="hidden" name="volver" value={props.volver} />
+        <Label htmlFor={`motivo_${props.mensajeId ?? props.ideaId}`}>¿Por qué te parece inapropiado?</Label>
+        <textarea id={`motivo_${props.mensajeId ?? props.ideaId}`} name="motivo" required minLength={3} maxLength={500} rows={2} className={campoTexto} />
+        <p className="text-[#666]">Va a seguir visible hasta que los profesores lo revisen. Quien lo escribió no sabe que lo reportaste.</p>
+        <div><Button type="submit" size="sm" variant="outline">Enviar reporte</Button></div>
+      </form>
+    </details>
+  );
+}
+
 const fecha = (iso: string) =>
   new Date(iso).toLocaleDateString("es-AR", { day: "numeric", month: "short", timeZone: "America/Argentina/Buenos_Aires" });
 
 async function Aviso({ searchParams }: Pick<PageProps<"/alumnos/ideas/[ideaId]">, "searchParams">) {
-  const { error } = await searchParams;
-  return error ? <p className="mb-6 border bg-card px-4 py-3 text-sm text-destructive">{error}</p> : null;
+  const { error, ok } = await searchParams;
+  if (error) return <p className="mb-6 border bg-card px-4 py-3 text-sm text-destructive">{error}</p>;
+  if (ok === "reportado") return <p className="mb-6 border bg-card px-4 py-3 text-sm">Gracias, el reporte les llegó a los profesores.</p>;
+  return null;
 }
 
 export default async function PaginaDeIdea({ params, searchParams }: PageProps<"/alumnos/ideas/[ideaId]">) {
@@ -39,11 +62,11 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
   if (error) throw error;
   if (!idea) notFound();
 
-  const [interesados, mensajes, parecidas, carreras] = await Promise.all([
+  const [interesados, mensajes, parecidas, carreras, temas, misReportes] = await Promise.all([
     supabase.from("alumnos_ideas_interesados").select("persona_id, personas(nombre, email)").eq("idea_id", idea.id),
     supabase
       .from("alumnos_ideas_mensajes")
-      .select("id, texto, created_at, respuesta_a, autor_id, autor:personas(nombre, rol)")
+      .select("id, texto, created_at, respuesta_a, autor_id, autor:personas!alumnos_ideas_mensajes_autor_id_fkey(nombre, rol)")
       .eq("idea_id", idea.id)
       .order("created_at"),
     idea.interes_id
@@ -56,8 +79,13 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
           .limit(3)
       : Promise.resolve({ data: [], error: null }),
     supabase.from("alumnos_carreras").select("persona_id, alumnos_carreras_maestro(nombre)"),
+    supabase.from("alumnos_intereses_maestro").select("id, nombre").eq("activo", true).order("orden").order("nombre"),
+    // Solo los reportes propios (RLS); a los profesores no les hace falta reportar.
+    esAlumno
+      ? supabase.from("alumnos_ideas_reportes").select("mensaje_id").eq("idea_id", idea.id).eq("persona_id", persona.id)
+      : Promise.resolve({ data: [], error: null }),
   ]);
-  for (const r of [interesados, mensajes, parecidas, carreras]) if (r.error) throw r.error;
+  for (const r of [interesados, mensajes, parecidas, carreras, temas, misReportes]) if (r.error) throw r.error;
 
   const volver = `/alumnos/ideas/${idea.id}`;
   const tomada = idea.estado === "tomada";
@@ -66,6 +94,10 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
   const carreraDe = new Map(carreras.data!.map((c) => [c.persona_id, c.alumnos_carreras_maestro.nombre]));
   const autorIdea = !idea.autor ? "autor desconocido" : idea.autor.rol === "admin" ? "los profesores" : idea.autor.nombre;
   const contextoCargado = CONTEXTO.filter(({ campo }) => idea[campo]);
+  const esAutor = idea.autor_id === persona.id;
+  const reportado = new Set(misReportes.data!.map((r) => r.mensaje_id ?? "idea"));
+  // El autor borra solo si nadie marcó "Me interesa"; los profesores siempre (para moderar).
+  const puedoBorrar = persona.rol === "admin" || interesados.data!.length === 0;
 
   const preguntas = mensajes.data!.filter((m) => !m.respuesta_a);
   const respuestasDe = (id: string) => mensajes.data!.filter((m) => m.respuesta_a === id);
@@ -75,6 +107,10 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
       {m.autor_id && m.autor_id === idea.autor_id && <Badge variant="outline">Autor de la idea</Badge>}
       <span>{fecha(m.created_at)}</span>
     </p>
+  );
+  const reportarMensaje = (m: (typeof preguntas)[number]) =>
+    esAlumno && m.autor_id !== persona.id && (
+      <Reportar ideaId={idea.id} mensajeId={m.id} volver={volver} yaReportado={reportado.has(m.id)} que="este mensaje" />
   );
 
   return (
@@ -91,6 +127,9 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
         <h1 className="font-serif text-3xl">{idea.titulo}</h1>
         <p className="text-sm text-[#666]">Propuesta por {autorIdea} · {fecha(idea.created_at)}</p>
         <p className="mt-2 whitespace-pre-line">{idea.descripcion}</p>
+        {esAlumno && !esAutor && (
+          <Reportar ideaId={idea.id} volver={volver} yaReportado={reportado.has("idea")} que="esta idea" />
+        )}
       </header>
 
       <Suspense><Aviso searchParams={searchParams} /></Suspense>
@@ -110,25 +149,33 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
         {puedoEditar && (
           <details className="border bg-card p-6" open={contextoCargado.length === 0}>
             <summary className="cursor-pointer text-sm font-medium">
-              {contextoCargado.length === 0 ? "Sumá contexto para que otros entiendan mejor el problema" : "Editar contexto"}
+              {contextoCargado.length === 0 ? "Sumá contexto para que otros entiendan mejor el problema" : "Editar idea"}
             </summary>
-            <form action={guardarContexto} className="mt-4 grid gap-4">
+            <form action={editarIdea} className="mt-4 grid gap-4">
               <input type="hidden" name="idea_id" value={idea.id} />
               <input type="hidden" name="volver" value={volver} />
+              <div className="grid gap-2">
+                <Label htmlFor="titulo">Título</Label>
+                <input id="titulo" name="titulo" required minLength={3} maxLength={120} defaultValue={idea.titulo} className={`h-8 ${campoTexto} py-0`} />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="descripcion">Descripción</Label>
+                <textarea id="descripcion" name="descripcion" required minLength={10} maxLength={1500} rows={3} defaultValue={idea.descripcion} className={campoTexto} />
+              </div>
+              <div className="grid max-w-sm gap-2">
+                <Label htmlFor="interes_id">Tema</Label>
+                <select id="interes_id" name="interes_id" required defaultValue={idea.interes_id ?? ""} className="h-8 border bg-background px-2 text-sm">
+                  <option value="" disabled>Elegí un tema</option>
+                  {temas.data!.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                </select>
+              </div>
               {CONTEXTO.map(({ campo, titulo }) => (
                 <div key={campo} className="grid gap-2">
-                  <Label htmlFor={campo}>{titulo}</Label>
-                  <textarea
-                    id={campo}
-                    name={campo}
-                    rows={2}
-                    maxLength={1000}
-                    defaultValue={idea[campo] ?? ""}
-                    className="border bg-background px-2.5 py-2 text-sm outline-none focus-visible:border-ring"
-                  />
+                  <Label htmlFor={campo}>{titulo} <span className="font-normal text-[#666]">(opcional)</span></Label>
+                  <textarea id={campo} name={campo} rows={2} maxLength={1000} defaultValue={idea[campo] ?? ""} className={campoTexto} />
                 </div>
               ))}
-              <div><Button type="submit" size="sm">Guardar contexto</Button></div>
+              <div><Button type="submit" size="sm">Guardar cambios</Button></div>
             </form>
           </details>
         )}
@@ -173,6 +220,25 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
             </form>
           )}
         </div>
+        {puedoEditar && !puedoBorrar && (
+          <p className="text-xs text-[#666]">
+            Como ya hay interesados, la idea no se puede borrar: podés editarla o marcarla como tomada.
+          </p>
+        )}
+        {puedoEditar && puedoBorrar && (
+          <details className="text-sm">
+            <summary className="cursor-pointer text-[#666] hover:text-destructive">Borrar idea</summary>
+            <form action={borrarIdea} className="mt-3 grid gap-2 border bg-card p-4">
+              <input type="hidden" name="idea_id" value={idea.id} />
+              <input type="hidden" name="volver" value={volver} />
+              <p>
+                Se borran la idea{interesados.data!.length > 0 && ", sus interesados"}
+                {mensajes.data!.length > 0 && " y sus preguntas y respuestas"}. No se puede deshacer.
+              </p>
+              <div><Button type="submit" size="sm" variant="destructive">Sí, borrar la idea</Button></div>
+            </form>
+          </details>
+        )}
       </section>
 
       {/* Preguntas y respuestas */}
@@ -189,12 +255,14 @@ export default async function PaginaDeIdea({ params, searchParams }: PageProps<"
             <li key={p.id} className="grid gap-3 border bg-background p-5">
               {firma(p)}
               <p className="text-sm whitespace-pre-line">{p.texto}</p>
+              {reportarMensaje(p)}
               {respuestasDe(p.id).length > 0 && (
                 <ol className="grid gap-3 border-l-2 pl-4">
                   {respuestasDe(p.id).map((r) => (
                     <li key={r.id} className="grid gap-1">
                       {firma(r)}
                       <p className="text-sm whitespace-pre-line">{r.texto}</p>
+                      {reportarMensaje(r)}
                     </li>
                   ))}
                 </ol>
