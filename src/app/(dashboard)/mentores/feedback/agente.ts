@@ -92,18 +92,29 @@ export async function ponerAlDia(supabase: Supabase, url: string) {
   if (error) throw error;
 
   for (const e of pendientes) {
-    const vencida = new Date(e.created_at).getTime() + SIN_RESPUESTA <= ahora;
+    // Se deja de esperar a los 5 días, pero nunca sin haber mandado el recordatorio y darle 48 h más para contestar.
+    const vencida = !!e.recordatorio_at
+      && new Date(e.created_at).getTime() + SIN_RESPUESTA <= ahora
+      && new Date(e.recordatorio_at).getTime() + RECORDATORIO <= ahora;
     if (vencida) {
       // No se insiste más: queda como "sin respuesta" y el coordinador lo ve en sus avisos.
       const { error: errorCierre } = await supabase.from("mentores_encuestas").update({ estado: "sin_respuesta" }).eq("id", e.id);
       if (errorCierre) throw errorCierre;
     } else if (!e.recordatorio_at) {
-      const envio = await enviarCorreo({ para: e.personas.email, ...mailPedido({ ...e, nombre: e.personas.nombre }, url, { recordatorio: true }) });
-      const { error: errorRecordatorio } = await supabase
+      // Primero se marca: si otra pestaña ya lo mandó, no devuelve nada y no sale dos veces.
+      const { data: marcada, error: errorRecordatorio } = await supabase
         .from("mentores_encuestas")
-        .update({ recordatorio_at: new Date().toISOString(), ...(!envio.ok && { mail_error: envio.error }) })
-        .eq("id", e.id);
+        .update({ recordatorio_at: new Date().toISOString() })
+        .eq("id", e.id)
+        .is("recordatorio_at", null)
+        .select("id");
       if (errorRecordatorio) throw errorRecordatorio;
+      if (!marcada.length) continue;
+      const envio = await enviarCorreo({ para: e.personas.email, ...mailPedido({ ...e, nombre: e.personas.nombre }, url, { recordatorio: true }) });
+      if (!envio.ok) {
+        const { error: errorMail } = await supabase.from("mentores_encuestas").update({ mail_error: envio.error }).eq("id", e.id);
+        if (errorMail) throw errorMail;
+      }
     }
   }
 
@@ -166,7 +177,8 @@ function resumenPorDatos(rs: Respuesta[], pedidas: number) {
   ].join(" ");
 }
 
-export async function armarResumen(supabase: Supabase, reunionId: string) {
+// Uno por reunión. `rehacer` lo reemplaza (por ejemplo, si alguien contestó tarde); si no, el que ya existe queda.
+export async function armarResumen(supabase: Supabase, reunionId: string, { rehacer = false } = {}) {
   const { data, error } = await supabase
     .from("mentores_encuestas")
     .select("papel, estado, puntaje, sirvio, mejorar, urgente, proyecto_nombre")
@@ -206,14 +218,16 @@ export async function armarResumen(supabase: Supabase, reunionId: string) {
     }
   }
 
-  const { error: errorResumen } = await supabase.from("mentores_feedback_resumenes").insert({
+  const { error: errorResumen } = await supabase.from("mentores_feedback_resumenes").upsert({
     reunion_id: reunionId,
     resumen,
     respuestas: respuestas.length,
     pedidas: data.length,
     con_ia: conIA,
     aviso,
-  });
+    util: null, // es un resumen nuevo: el coordinador lo vuelve a calificar
+    created_at: new Date().toISOString(),
+  }, { onConflict: "reunion_id", ignoreDuplicates: !rehacer });
   if (errorResumen) throw errorResumen;
 }
 

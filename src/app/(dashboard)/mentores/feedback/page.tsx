@@ -37,9 +37,8 @@ export default async function Feedback({ searchParams }: PageProps<"/mentores/fe
   if (errorReuniones) throw errorReuniones;
 
   const encuestas = reuniones.flatMap((r) => r.mentores_encuestas);
-  const ultimo = (r: (typeof reuniones)[number]) =>
-    [...r.mentores_feedback_resumenes].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
-  const m = metricas(encuestas, reuniones.map(ultimo).filter((r) => !!r));
+  const ultimo = (r: (typeof reuniones)[number]) => r.mentores_feedback_resumenes; // uno por reunión
+  const m = metricas(encuestas, reuniones.map(ultimo).filter((r) => r !== null));
 
   // Lo que el coordinador tiene que mirar: algo grave, gente que no contestó y avisos de los resúmenes.
   const avisos = reuniones.flatMap((r) => {

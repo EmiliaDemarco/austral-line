@@ -456,7 +456,7 @@ isOneToOne: false
                     {
       foreignKeyName: "mentores_feedback_resumenes_reunion_id_fkey"
       columns: ["reunion_id"]
-isOneToOne: false
+isOneToOne: true
       referencedRelation: "mentores_reuniones"
       referencedColumns: ["id"]
     }

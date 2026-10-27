@@ -60,6 +60,6 @@ export async function marcarResumen(formData: FormData) {
 // Por ejemplo, si alguien contestó tarde después de que se armó el resumen.
 export async function rehacerResumen(formData: FormData) {
   await requireRol(); // solo admin
-  await armarResumen(await createClient(), String(formData.get("reunion_id")));
+  await armarResumen(await createClient(), String(formData.get("reunion_id")), { rehacer: true });
   volver("/mentores/feedback", true, "Resumen armado de nuevo con las respuestas que hay.");
 }

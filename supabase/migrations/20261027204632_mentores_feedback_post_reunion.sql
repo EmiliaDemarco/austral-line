@@ -37,10 +37,10 @@ create table mentores_encuestas (
 
 create index on mentores_encuestas (persona_id, estado);
 
--- El resumen que arma el agente con las respuestas de una reunión. Anónimo: no dice quién dijo qué.
+-- El resumen que arma el agente con las respuestas de una reunión (uno por reunión). Anónimo: no dice quién dijo qué.
 create table mentores_feedback_resumenes (
   id uuid primary key default gen_random_uuid(),
-  reunion_id uuid not null references mentores_reuniones(id) on delete cascade,
+  reunion_id uuid not null unique references mentores_reuniones(id) on delete cascade,
   resumen text not null,
   respuestas smallint not null,     -- cuántas encuestas contestadas usó
   pedidas smallint not null,        -- cuántas se pidieron
@@ -49,8 +49,6 @@ create table mentores_feedback_resumenes (
   util boolean,                     -- el coordinador marca si el resumen le sirvió (calidad del resumen)
   created_at timestamptz not null default now()
 );
-
-create index on mentores_feedback_resumenes (reunion_id, created_at);
 
 -- Encuestas: el admin ve todo. Cada persona ve y contesta solo la suya.
 -- El mentor (o el coordinador) crea las de sus reuniones cuando terminan, pero no puede leer las de los alumnos.
