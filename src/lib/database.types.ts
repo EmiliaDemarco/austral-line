@@ -441,6 +441,58 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"mentores_resumenes": {
+                  Row: {
+                    "asunto": string,"aviso": string | null,"aviso_util": boolean | null,"con_ia": boolean,"created_at": string,"email": string,"error": string | null,"estado": string,"html": string,"id": string,"leido_at": string | null,"programado_para": string | null,"resend_id": string | null,"reunion_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "asunto": string,"aviso"?: string | null,"aviso_util"?: boolean | null,"con_ia": boolean,"created_at"?: string,"email": string,"error"?: string | null,"estado": string,"html": string,"id"?: string,"leido_at"?: string | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id": string
+                  }
+                  Update: {
+                    "asunto"?: string,"aviso"?: string | null,"aviso_util"?: boolean | null,"con_ia"?: boolean,"created_at"?: string,"email"?: string,"error"?: string | null,"estado"?: string,"html"?: string,"id"?: string,"leido_at"?: string | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mentores_resumenes_reunion_id_fkey"
+      columns: ["reunion_id"]
+isOneToOne: false
+      referencedRelation: "mentores_reuniones"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"mentores_reuniones": {
+                  Row: {
+                    "cancelada": boolean,"cargada_por": string | null,"created_at": string,"id": string,"inicio": string,"lugar": string | null,"mentor_id": string,"notas": string | null,"proximos_pasos": string | null,"proyecto_id": string,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cancelada"?: boolean,"cargada_por"?: string | null,"created_at"?: string,"id"?: string,"inicio": string,"lugar"?: string | null,"mentor_id": string,"notas"?: string | null,"proximos_pasos"?: string | null,"proyecto_id": string,"updated_at"?: string
+                  }
+                  Update: {
+                    "cancelada"?: boolean,"cargada_por"?: string | null,"created_at"?: string,"id"?: string,"inicio"?: string,"lugar"?: string | null,"mentor_id"?: string,"notas"?: string | null,"proximos_pasos"?: string | null,"proyecto_id"?: string,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "mentores_reuniones_cargada_por_fkey"
+      columns: ["cargada_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mentores_reuniones_mentor_id_fkey"
+      columns: ["mentor_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "mentores_reuniones_proyecto_id_fkey"
+      columns: ["proyecto_id"]
+isOneToOne: false
+      referencedRelation: "proyectos"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"personas": {
                   Row: {
                     "created_at": string,"email": string,"id": string,"nombre": string,"rol": Database["public"]['Enums']["rol"]
