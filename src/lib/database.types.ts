@@ -147,6 +147,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"alumnos_ideas_reportes": {
+                  Row: {
+                    "created_at": string,"id": string,"idea_id": string,"mensaje_id": string | null,"motivo": string,"persona_id": string,"resuelto": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"idea_id": string,"mensaje_id"?: string | null,"motivo": string,"persona_id": string,"resuelto"?: boolean
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"idea_id"?: string,"mensaje_id"?: string | null,"motivo"?: string,"persona_id"?: string,"resuelto"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_ideas_reportes_idea_id_fkey"
+      columns: ["idea_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_ideas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_ideas_reportes_mensaje_id_fkey"
+      columns: ["mensaje_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_ideas_mensajes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_ideas_reportes_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"alumnos_intereses": {
                   Row: {
                     "estrellas": number,"interes_id": number,"persona_id": string,"updated_at": string

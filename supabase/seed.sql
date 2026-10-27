@@ -209,3 +209,9 @@ with pregunta as (
 insert into alumnos_ideas_mensajes (idea_id, autor_id, respuesta_a, texto)
 select pregunta.idea_id, pe.id, pregunta.id, 'Sí, mi familia trabaja con varios en San Pedro. Les puedo preguntar.'
 from pregunta, personas pe where pe.email = 'diego@alumnos.austral.edu.ar';
+
+-- GRUPO ALUMNOS: un reporte pendiente de ejemplo, para ver la moderación en el Panel de profesores.
+insert into alumnos_ideas_reportes (idea_id, persona_id, motivo)
+select i.id, pe.id, 'Me parece que repite una idea que ya está en el banco con otro nombre.'
+from alumnos_ideas i, personas pe
+where i.titulo = 'Finanzas personales para estudiantes' and pe.email = 'carla@alumnos.austral.edu.ar';

@@ -15,6 +15,7 @@ async function Aviso({ searchParams }: Pick<PageProps<"/alumnos/ideas">, "search
   const { error, ok } = await searchParams;
   if (error) return <p className="mb-6 border bg-card px-4 py-3 text-sm text-destructive">{error}</p>;
   if (ok === "propuesta") return <p className="mb-6 border bg-card px-4 py-3 text-sm">Tu idea ya está en el banco.</p>;
+  if (ok === "borrada") return <p className="mb-6 border bg-card px-4 py-3 text-sm">La idea se borró del banco.</p>;
   return null;
 }
 
