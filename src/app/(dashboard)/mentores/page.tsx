@@ -1,4 +1,5 @@
 // GRUPO MENTORES — esta carpeta es de ustedes.
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -13,7 +14,12 @@ export default async function Mentores() {
 
   return (
     <>
-      <h1 className="mb-6 font-serif text-2xl">Mentores</h1>
+      <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+        <h1 className="font-serif text-2xl">Mentores</h1>
+        <Link href="/mentores/reuniones" className="text-sm text-[#666] underline underline-offset-4 hover:text-primary">
+          Reuniones y resúmenes pre-reunión
+        </Link>
+      </div>
       <Table>
         <TableHeader><TableRow><TableHead>Nombre</TableHead><TableHead>Email</TableHead></TableRow></TableHeader>
         <TableBody>
