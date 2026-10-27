@@ -15,7 +15,14 @@ export function SubirEntrega({ proyectoId, eventoId, hayVersiones }: { proyectoI
 
   async function subir(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    const form = e.currentTarget;
+    try {
+      await intentarSubir(e.currentTarget);
+    } catch {
+      setEstado({ subiendo: false, error: "Algo falló al subir. Probá de nuevo." });
+    }
+  }
+
+  async function intentarSubir(form: HTMLFormElement) {
     const archivo = (form.elements.namedItem("archivo") as HTMLInputElement).files?.[0];
     const nota = (form.elements.namedItem("nota") as HTMLTextAreaElement).value;
     if (!archivo) return setEstado({ subiendo: false, error: "Elegí un archivo." });
@@ -28,8 +35,10 @@ export function SubirEntrega({ proyectoId, eventoId, hayVersiones }: { proyectoI
     const cuerpo = new FormData();
     cuerpo.append("cacheControl", "3600");
     cuerpo.append("", archivo);
-    const respuesta = await fetch(preparada.signedUrl, { method: "PUT", body: cuerpo, headers: { "x-upsert": "false" } });
-    if (!respuesta.ok) return setEstado({ subiendo: false, error: "No se pudo subir el archivo. Probá de nuevo." });
+    const respuesta = await fetch(preparada.signedUrl, { method: "PUT", body: cuerpo, headers: { "x-upsert": "false" } }).catch(
+      () => null,
+    );
+    if (!respuesta?.ok) return setEstado({ subiendo: false, error: "No se pudo subir el archivo. Revisá tu conexión y probá de nuevo." });
 
     const registro = await registrarEntrega({
       proyectoId,
