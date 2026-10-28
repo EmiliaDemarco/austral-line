@@ -29,9 +29,12 @@ grant execute on function public.alumnos_yo(), public.alumnos_soy_integrante(tex
   to authenticated;
 
 -- Entregas (una fila por versión) ---------------------------------------------------------------
+-- Una entrega es del grupo (proyecto_id) o de un alumno (persona_id), nunca de los dos. En esta etapa
+-- solo se usan las del grupo; las individuales se suman aparte con sus propios permisos.
 create table alumnos_entregas (
   id uuid primary key default gen_random_uuid(),
-  proyecto_id uuid not null references proyectos(id) on delete cascade,
+  proyecto_id uuid references proyectos(id) on delete cascade,
+  persona_id uuid references personas(id) on delete cascade,
   evento_id uuid not null references eventos(id) on delete cascade,
   version integer not null check (version >= 1),
   archivo_path text not null unique,
@@ -40,8 +43,12 @@ create table alumnos_entregas (
   nota text check (char_length(nota) <= 500),
   subida_por uuid references personas(id) on delete set null,
   created_at timestamptz not null default now(),
-  unique (proyecto_id, evento_id, version)
+  check ((proyecto_id is null) <> (persona_id is null))
 );
+
+-- Las versiones se numeran por separado para cada grupo (o alumno) y cada hito.
+create unique index alumnos_entregas_version_unica
+  on alumnos_entregas (proyecto_id, persona_id, evento_id, version) nulls not distinct;
 
 alter table alumnos_entregas enable row level security;
 

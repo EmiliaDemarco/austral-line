@@ -65,14 +65,14 @@ isOneToOne: true
                   ]
                 },"alumnos_entregas": {
                   Row: {
-                    "archivo_path": string,"created_at": string,"evento_id": string,"id": string,"nombre_archivo": string,"nota": string | null,"proyecto_id": string,"subida_por": string | null,"tamano_bytes": number,"version": number
+                    "archivo_path": string,"created_at": string,"evento_id": string,"id": string,"nombre_archivo": string,"nota": string | null,"persona_id": string | null,"proyecto_id": string | null,"subida_por": string | null,"tamano_bytes": number,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "archivo_path": string,"created_at"?: string,"evento_id": string,"id"?: string,"nombre_archivo": string,"nota"?: string | null,"proyecto_id": string,"subida_por"?: string | null,"tamano_bytes": number,"version": number
+                    "archivo_path": string,"created_at"?: string,"evento_id": string,"id"?: string,"nombre_archivo": string,"nota"?: string | null,"persona_id"?: string | null,"proyecto_id"?: string | null,"subida_por"?: string | null,"tamano_bytes": number,"version": number
                   }
                   Update: {
-                    "archivo_path"?: string,"created_at"?: string,"evento_id"?: string,"id"?: string,"nombre_archivo"?: string,"nota"?: string | null,"proyecto_id"?: string,"subida_por"?: string | null,"tamano_bytes"?: number,"version"?: number
+                    "archivo_path"?: string,"created_at"?: string,"evento_id"?: string,"id"?: string,"nombre_archivo"?: string,"nota"?: string | null,"persona_id"?: string | null,"proyecto_id"?: string | null,"subida_por"?: string | null,"tamano_bytes"?: number,"version"?: number
                   }
                   Relationships: [
                     {
@@ -80,6 +80,12 @@ isOneToOne: true
       columns: ["evento_id"]
 isOneToOne: false
       referencedRelation: "eventos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
       referencedColumns: ["id"]
     },{
       foreignKeyName: "alumnos_entregas_proyecto_id_fkey"
