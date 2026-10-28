@@ -97,14 +97,14 @@ isOneToOne: false
                   ]
                 },"alumnos_entregas_devoluciones": {
                   Row: {
-                    "autor_id": string | null,"created_at": string,"entrega_id": string,"id": string,"texto": string
+                    "autor_id": string | null,"created_at": string,"entrega_id": string,"id": string,"respuesta_a": string | null,"texto": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "autor_id"?: string | null,"created_at"?: string,"entrega_id": string,"id"?: string,"texto": string
+                    "autor_id"?: string | null,"created_at"?: string,"entrega_id": string,"id"?: string,"respuesta_a"?: string | null,"texto": string
                   }
                   Update: {
-                    "autor_id"?: string | null,"created_at"?: string,"entrega_id"?: string,"id"?: string,"texto"?: string
+                    "autor_id"?: string | null,"created_at"?: string,"entrega_id"?: string,"id"?: string,"respuesta_a"?: string | null,"texto"?: string
                   }
                   Relationships: [
                     {
@@ -118,6 +118,12 @@ isOneToOne: false
       columns: ["entrega_id"]
 isOneToOne: false
       referencedRelation: "alumnos_entregas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_devoluciones_respuesta_a_fkey"
+      columns: ["respuesta_a"]
+isOneToOne: false
+      referencedRelation: "alumnos_entregas_devoluciones"
       referencedColumns: ["id"]
     }
                   ]

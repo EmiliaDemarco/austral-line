@@ -55,10 +55,13 @@ create policy "mentor ve sus grupos" on alumnos_entregas for select to authentic
 create policy "grupo sube a su nombre" on alumnos_entregas for insert to authenticated
   with check (mi_rol() = 'alumno' and alumnos_soy_integrante(proyecto_id::text) and subida_por = alumnos_yo());
 
--- Devoluciones sobre una versión ------------------------------------------------------------------
+-- Devoluciones sobre una versión, y la conversación debajo de cada una -----------------------------
+-- Una devolución tiene respuesta_a = null; una respuesta apunta a esa devolución (un solo nivel).
+-- Contestan el grupo y quien dejó la devolución (y los profesores, que ven todo).
 create table alumnos_entregas_devoluciones (
   id uuid primary key default gen_random_uuid(),
   entrega_id uuid not null references alumnos_entregas(id) on delete cascade,
+  respuesta_a uuid references alumnos_entregas_devoluciones(id) on delete cascade,
   autor_id uuid references personas(id) on delete set null,
   texto text not null check (char_length(btrim(texto)) between 2 and 2000),
   created_at timestamptz not null default now()
@@ -80,6 +83,38 @@ create policy "mentor escribe a su nombre en sus grupos" on alumnos_entregas_dev
     autor_id = alumnos_yo()
     and exists (select 1 from alumnos_entregas e where e.id = entrega_id and alumnos_soy_mentor(e.proyecto_id::text))
   );
+-- El grupo no deja devoluciones: solo contesta las que recibió, a su nombre.
+create policy "grupo contesta a su nombre" on alumnos_entregas_devoluciones for insert to authenticated
+  with check (
+    mi_rol() = 'alumno'
+    and respuesta_a is not null
+    and autor_id = alumnos_yo()
+    and exists (select 1 from alumnos_entregas e where e.id = entrega_id and alumnos_soy_integrante(e.proyecto_id::text))
+  );
+
+-- Una respuesta tiene que ir a una devolución (no a otra respuesta) de la misma versión, y un mentor
+-- solo contesta en las conversaciones de las devoluciones que dejó él.
+create function public.alumnos_validar_respuesta() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare
+  raiz alumnos_entregas_devoluciones%rowtype;
+begin
+  if new.respuesta_a is null then
+    return new;
+  end if;
+  select * into raiz from alumnos_entregas_devoluciones where id = new.respuesta_a;
+  if raiz.id is null or raiz.respuesta_a is not null or raiz.entrega_id <> new.entrega_id then
+    raise exception 'La respuesta tiene que ir a una devolución de esta misma versión.';
+  end if;
+  if mi_rol() = 'mentor' and raiz.autor_id is distinct from new.autor_id then
+    raise exception 'Solo quien dejó la devolución (o el grupo) puede contestarla.';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger alumnos_validar_respuesta before insert or update on alumnos_entregas_devoluciones
+  for each row execute function public.alumnos_validar_respuesta();
 
 -- Archivos: bucket privado propio del grupo Alumnos ---------------------------------------------
 -- Ruta de cada archivo: <proyecto_id>/<evento_id>/v<version>-<nombre>. Las políticas son solo para este bucket.

@@ -7,7 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { dejarDevolucion } from "./_acciones";
+import { ChevronDown } from "lucide-react";
+import { publicarDevolucion } from "./_acciones";
 import { SubirEntrega } from "./_components/subir-entrega";
 
 const ZONA = "America/Argentina/Buenos_Aires";
@@ -57,17 +58,18 @@ export default async function Entregas({ searchParams }: PageProps<"/alumnos/ent
     );
   }
 
-  const { proyecto: elegido } = await searchParams;
+  const { proyecto: elegido, hito: hitoElegido } = await searchParams;
   const proyecto = proyectos.find((p) => p.id === elegido) ?? proyectos[0];
   const puedeSubir = persona.rol === "alumno";
   const puedeDevolver = persona.rol !== "alumno";
+  const fueYo = (autorId: string | null) => autorId === persona.id;
 
   const [eventos, entregas] = await Promise.all([
     supabase.from("eventos").select("id, nombre, inicio").order("inicio"),
     supabase
       .from("alumnos_entregas")
       .select(
-        "*, subidor:personas!alumnos_entregas_subida_por_fkey(nombre), alumnos_entregas_devoluciones(id, texto, created_at, autor:personas!alumnos_entregas_devoluciones_autor_id_fkey(nombre, rol))",
+        "*, subidor:personas!alumnos_entregas_subida_por_fkey(nombre), alumnos_entregas_devoluciones(id, texto, created_at, respuesta_a, autor_id, autor:personas!alumnos_entregas_devoluciones_autor_id_fkey(nombre, rol))",
       )
       .eq("proyecto_id", proyecto.id)
       .order("version", { ascending: false }),
@@ -80,6 +82,11 @@ export default async function Entregas({ searchParams }: PageProps<"/alumnos/ent
   const firmadas = paths.length ? await supabase.storage.from("alumnos-entregas").createSignedUrls(paths, 3600) : { data: [] };
   const linkDe = new Map((firmadas.data ?? []).map((f) => [f.path, f.signedUrl]));
 
+  // Hito abierto al entrar: el elegido (al volver de una acción) o el próximo que todavía no pasó.
+  const hoy = new Date(new Date().toLocaleDateString("en-CA", { timeZone: ZONA })).getTime();
+  const proximo = eventos.data.find((ev) => new Date(ev.inicio).getTime() >= hoy) ?? eventos.data.at(-1);
+  const abierto = eventos.data.some((ev) => ev.id === hitoElegido) ? hitoElegido : proximo?.id;
+
   const autorDevolucion = (a: { nombre: string; rol: string } | null) =>
     !a ? "Alguien" : a.rol === "admin" ? "Profesores" : a.rol === "mentor" ? `${a.nombre} (mentor)` : a.nombre;
 
@@ -88,7 +95,8 @@ export default async function Entregas({ searchParams }: PageProps<"/alumnos/ent
       {titulo}
       <p className="mb-6 max-w-2xl text-sm text-[#666]">
         Las entregas del grupo para cada hito del cuatrimestre. Cada vez que suben un archivo queda como una versión
-        nueva, sin borrar las anteriores, y profesores y mentores dejan su devolución sobre cada una.
+        nueva, sin borrar las anteriores, y profesores y mentores dejan su devolución sobre cada una. Tocá un hito para
+        abrirlo o cerrarlo.
       </p>
 
       {proyectos.length > 1 && (
@@ -110,77 +118,133 @@ export default async function Entregas({ searchParams }: PageProps<"/alumnos/ent
       <h2 className="mb-4 font-serif text-xl">{proyecto.nombre}</h2>
       {eventos.data.length === 0 && <p className="text-sm text-[#666]">Todavía no hay hitos cargados en el cuatrimestre.</p>}
 
-      <ol className="grid max-w-3xl gap-4">
+      <ol className="grid max-w-3xl gap-3">
         {eventos.data.map((ev) => {
           const versiones = entregas.data.filter((e) => e.evento_id === ev.id);
+          const ocultos = (
+            <>
+              <input type="hidden" name="proyecto_id" value={proyecto.id} />
+              <input type="hidden" name="evento_id" value={ev.id} />
+            </>
+          );
           return (
-            <li key={ev.id} className="grid gap-4 border bg-card p-6">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <p className="font-serif text-lg">{ev.nombre}</p>
-                <p className="text-sm text-[#666]">{fecha(ev.inicio)}</p>
-              </div>
+            <li key={ev.id}>
+              <details open={ev.id === abierto} className="group border bg-card">
+                <summary className="flex cursor-pointer list-none items-center gap-3 px-6 py-4 [&::-webkit-details-marker]:hidden">
+                  <ChevronDown className="size-4 shrink-0 -rotate-90 text-[#666] transition-transform group-open:rotate-0" aria-hidden />
+                  <span className="font-serif text-lg">{ev.nombre}</span>
+                  {ev.id === proximo?.id && <Badge variant="outline">Próximo</Badge>}
+                  <span className="ml-auto flex items-center gap-3 text-sm text-[#666]">
+                    <span>{versiones.length === 0 ? "Sin entregar" : versiones.length === 1 ? "1 versión" : `${versiones.length} versiones`}</span>
+                    <span>{fecha(ev.inicio)}</span>
+                  </span>
+                </summary>
 
-              {versiones.length === 0 ? (
-                <p className="text-sm text-[#666]">Todavía no hay nada entregado para este hito.</p>
-              ) : (
-                <ul className="grid gap-3">
-                  {versiones.map((v, i) => (
-                    <li key={v.id} className={cn("grid gap-2 border bg-background p-4", i > 0 && "opacity-80")}>
-                      <div className="flex flex-wrap items-center gap-2 text-sm">
-                        <Badge variant={i === 0 ? "default" : "outline"}>{i === 0 ? `Versión ${v.version} · la última` : `Versión ${v.version}`}</Badge>
-                        {linkDe.get(v.archivo_path) ? (
-                          <a href={linkDe.get(v.archivo_path)!} className="underline underline-offset-4 hover:text-[#666]">
-                            {v.nombre_archivo}
-                          </a>
-                        ) : (
-                          <span>{v.nombre_archivo}</span>
-                        )}
-                        <span className="text-[#666]">
-                          {tamano(v.tamano_bytes)} · {v.subidor?.nombre ?? "alguien del grupo"} · {fechaHora(v.created_at)}
-                        </span>
-                      </div>
-                      {v.nota && <p className="border-l-2 pl-3 text-sm">{v.nota}</p>}
+                <div className="grid gap-4 border-t px-6 py-5">
+                  {versiones.length === 0 ? (
+                    <p className="text-sm text-[#666]">Todavía no hay nada entregado para este hito.</p>
+                  ) : (
+                    <ul className="grid gap-3">
+                      {versiones.map((v, i) => {
+                        const devoluciones = [...v.alumnos_entregas_devoluciones].sort((a, b) => a.created_at.localeCompare(b.created_at));
+                        const raices = devoluciones.filter((d) => !d.respuesta_a);
+                        return (
+                          <li key={v.id} className={cn("grid gap-2 border bg-background p-4", i > 0 && "opacity-80")}>
+                            <div className="flex flex-wrap items-center gap-2 text-sm">
+                              <Badge variant={i === 0 ? "default" : "outline"}>{i === 0 ? `Versión ${v.version} · la última` : `Versión ${v.version}`}</Badge>
+                              {linkDe.get(v.archivo_path) ? (
+                                <a href={linkDe.get(v.archivo_path)!} className="underline underline-offset-4 hover:text-[#666]">
+                                  {v.nombre_archivo}
+                                </a>
+                              ) : (
+                                <span>{v.nombre_archivo}</span>
+                              )}
+                              <span className="text-[#666]">
+                                {tamano(v.tamano_bytes)} · {v.subidor?.nombre ?? "alguien del grupo"} · {fechaHora(v.created_at)}
+                              </span>
+                            </div>
+                            {v.nota && <p className="border-l-2 pl-3 text-sm">{v.nota}</p>}
 
-                      {v.alumnos_entregas_devoluciones.length > 0 && (
-                        <ul className="grid gap-2 border-t pt-3">
-                          {[...v.alumnos_entregas_devoluciones]
-                            .sort((a, b) => a.created_at.localeCompare(b.created_at))
-                            .map((d) => (
-                              <li key={d.id} className="grid gap-1 text-sm">
-                                <span className="text-xs text-[#666]">
-                                  <span className="font-medium text-primary">Devolución de {autorDevolucion(d.autor)}</span> · {fecha(d.created_at)}
-                                </span>
-                                <p className="whitespace-pre-line">{d.texto}</p>
-                              </li>
-                            ))}
-                        </ul>
-                      )}
+                            {raices.length > 0 && (
+                              <ul className="grid gap-4 border-t pt-3">
+                                {raices.map((d) => {
+                                  const respuestas = devoluciones.filter((r) => r.respuesta_a === d.id);
+                                  // Contestan el grupo, quien dejó la devolución y los profesores.
+                                  const puedoContestar = persona.rol !== "mentor" || fueYo(d.autor_id);
+                                  return (
+                                    <li key={d.id} className="grid gap-2 text-sm">
+                                      <div className="grid gap-1">
+                                        <span className="text-xs text-[#666]">
+                                          <span className="font-medium text-primary">Devolución de {autorDevolucion(d.autor)}</span> · {fecha(d.created_at)}
+                                        </span>
+                                        <p className="whitespace-pre-line">{d.texto}</p>
+                                      </div>
+                                      {respuestas.length > 0 && (
+                                        <ul className="grid gap-2 border-l-2 pl-4">
+                                          {respuestas.map((r) => (
+                                            <li key={r.id} className="grid gap-0.5">
+                                              <span className="text-xs text-[#666]">
+                                                <span className="font-medium text-primary">{autorDevolucion(r.autor)}</span> · {fechaHora(r.created_at)}
+                                              </span>
+                                              <p className="whitespace-pre-line">{r.texto}</p>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      )}
+                                      {puedoContestar && (
+                                        <details className="pl-4">
+                                          <summary className="cursor-pointer text-[#666] hover:text-primary">Contestar</summary>
+                                          <form action={publicarDevolucion} className="mt-2 grid gap-2">
+                                            <input type="hidden" name="entrega_id" value={v.id} />
+                                            <input type="hidden" name="respuesta_a" value={d.id} />
+                                            {ocultos}
+                                            <textarea
+                                              name="texto"
+                                              required
+                                              minLength={2}
+                                              maxLength={2000}
+                                              rows={2}
+                                              aria-label="Tu respuesta"
+                                              className="border bg-background px-2.5 py-2 text-sm outline-none focus-visible:border-ring"
+                                            />
+                                            <div><Button type="submit" size="sm" variant="outline">Enviar respuesta</Button></div>
+                                          </form>
+                                        </details>
+                                      )}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            )}
 
-                      {puedeDevolver && (
-                        <details className="text-sm">
-                          <summary className="cursor-pointer text-[#666] hover:text-primary">Dejar una devolución</summary>
-                          <form action={dejarDevolucion} className="mt-2 grid gap-2">
-                            <input type="hidden" name="entrega_id" value={v.id} />
-                            <input type="hidden" name="proyecto_id" value={proyecto.id} />
-                            <textarea
-                              name="texto"
-                              required
-                              minLength={2}
-                              maxLength={2000}
-                              rows={3}
-                              aria-label="Devolución"
-                              className="border bg-background px-2.5 py-2 text-sm outline-none focus-visible:border-ring"
-                            />
-                            <div><Button type="submit" size="sm">Enviar devolución</Button></div>
-                          </form>
-                        </details>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
+                            {puedeDevolver && (
+                              <details className="text-sm">
+                                <summary className="cursor-pointer text-[#666] hover:text-primary">Dejar una devolución</summary>
+                                <form action={publicarDevolucion} className="mt-2 grid gap-2">
+                                  <input type="hidden" name="entrega_id" value={v.id} />
+                                  {ocultos}
+                                  <textarea
+                                    name="texto"
+                                    required
+                                    minLength={2}
+                                    maxLength={2000}
+                                    rows={3}
+                                    aria-label="Devolución"
+                                    className="border bg-background px-2.5 py-2 text-sm outline-none focus-visible:border-ring"
+                                  />
+                                  <div><Button type="submit" size="sm">Enviar devolución</Button></div>
+                                </form>
+                              </details>
+                            )}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  )}
 
-              {puedeSubir && <SubirEntrega proyectoId={proyecto.id} eventoId={ev.id} hayVersiones={versiones.length > 0} />}
+                  {puedeSubir && <SubirEntrega proyectoId={proyecto.id} eventoId={ev.id} hayVersiones={versiones.length > 0} />}
+                </div>
+              </details>
             </li>
           );
         })}

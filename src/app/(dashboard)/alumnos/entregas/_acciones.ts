@@ -62,19 +62,30 @@ export async function registrarEntrega(datos: {
   return { ok: true };
 }
 
-// Devolución de un profesor o mentor sobre una versión.
-export async function dejarDevolucion(formData: FormData) {
-  const persona = await requireRol("mentor"); // el admin (profesores) también pasa
+// Vuelve a Entregas con el grupo elegido y el hito abierto.
+const volverA = (formData: FormData) => {
+  const proyecto = encodeURIComponent(String(formData.get("proyecto_id") ?? ""));
+  const hito = encodeURIComponent(String(formData.get("evento_id") ?? ""));
+  return `/alumnos/entregas?proyecto=${proyecto}&hito=${hito}`;
+};
+
+// Devolución de un profesor o mentor sobre una versión, o respuesta en la conversación de una devolución.
+// La base decide quién puede qué: el grupo solo contesta; un mentor contesta solo sus devoluciones.
+export async function publicarDevolucion(formData: FormData) {
+  const persona = await requireRol("alumno", "mentor"); // el admin (profesores) también pasa
   const entregaId = String(formData.get("entrega_id"));
-  const proyectoId = String(formData.get("proyecto_id"));
+  const respuestaA = String(formData.get("respuesta_a") ?? "") || null;
   const texto = String(formData.get("texto") ?? "").trim();
-  const volver = `/alumnos/entregas?proyecto=${encodeURIComponent(proyectoId)}`;
-  if (texto.length < 2) redirect(`${volver}&error=${encodeURIComponent("Escribí la devolución.")}`);
+  const volver = volverA(formData);
+  if (texto.length < 2) redirect(`${volver}&error=${encodeURIComponent("Escribí tu mensaje.")}`);
+  if (!respuestaA && persona.rol === "alumno") {
+    redirect(`${volver}&error=${encodeURIComponent("Las devoluciones las dejan profesores y mentores.")}`);
+  }
   const supabase = await createClient();
   const { error } = await supabase
     .from("alumnos_entregas_devoluciones")
-    .insert({ entrega_id: entregaId, autor_id: persona.id, texto });
-  if (error) redirect(`${volver}&error=${encodeURIComponent(`No se pudo guardar la devolución: ${error.message}`)}`);
+    .insert({ entrega_id: entregaId, respuesta_a: respuestaA, autor_id: persona.id, texto });
+  if (error) redirect(`${volver}&error=${encodeURIComponent(`No se pudo publicar: ${error.message}`)}`);
   revalidatePath("/alumnos/entregas");
   redirect(volver);
 }
