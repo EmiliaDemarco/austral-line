@@ -6,10 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { calcularAfinidad } from "../_lib/afinidad";
 import { evaluarGrupo, MINIMO_CARRERAS } from "../_lib/interdisciplina";
+import { InteresesGrupo } from "./intereses-grupo";
 
 const SUGERENCIAS = 3;
 
-export async function MiGrupo({ personaId }: { personaId: string }) {
+// guardadoEn: proyecto cuyos intereses de grupo se acaban de guardar (para mostrar "Guardado").
+export async function MiGrupo({ personaId, guardadoEn }: { personaId: string; guardadoEn?: string }) {
   const supabase = await createClient();
 
   const [integrantes, carreras, perfiles, respuestas, maestro] = await Promise.all([
@@ -138,6 +140,12 @@ export async function MiGrupo({ personaId }: { personaId: string }) {
                 )}
               </div>
             )}
+
+            <InteresesGrupo
+              proyectoId={proyectoId}
+              miembros={miembros.map((m) => ({ id: m.persona_id, nombre: m.personas.nombre }))}
+              guardado={guardadoEn === proyectoId}
+            />
           </article>
         );
       })}
