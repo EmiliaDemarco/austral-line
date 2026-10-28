@@ -4,6 +4,7 @@
 // El archivo va directo al almacenamiento (con una URL firmada), así no hay límite de tamaño del servidor.
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { prepararSubida, registrarEntrega } from "../_acciones";
 
@@ -12,6 +13,8 @@ const LIMITE_MB = 50;
 export function SubirEntrega({ proyectoId, eventoId, hayVersiones }: { proyectoId: string; eventoId: string; hayVersiones: boolean }) {
   const router = useRouter();
   const [estado, setEstado] = useState<{ subiendo: boolean; error?: string; ok?: string }>({ subiendo: false });
+  const [elegido, setElegido] = useState<string | null>(null);
+  const idArchivo = `archivo-${eventoId}`;
 
   async function subir(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -51,6 +54,7 @@ export function SubirEntrega({ proyectoId, eventoId, hayVersiones }: { proyectoI
     });
     if ("error" in registro) return setEstado({ subiendo: false, error: registro.error });
     form.reset();
+    setElegido(null);
     setEstado({ subiendo: false, ok: `Listo: se subió la versión ${preparada.version}.` });
     router.refresh();
   }
@@ -59,7 +63,30 @@ export function SubirEntrega({ proyectoId, eventoId, hayVersiones }: { proyectoI
     <details className="text-sm">
       <summary className="cursor-pointer font-medium">{hayVersiones ? "Subir una versión nueva" : "Subir la entrega"}</summary>
       <form onSubmit={subir} className="mt-3 grid gap-3 border bg-background p-4">
-        <input type="file" name="archivo" required className="text-sm" />
+        {/* El input real queda oculto; el recuadro con el ícono es lo que se toca para elegir el archivo. */}
+        <input
+          id={idArchivo}
+          type="file"
+          name="archivo"
+          className="sr-only"
+          onChange={(e) => {
+            const archivo = e.currentTarget.files?.[0];
+            setElegido(archivo ? archivo.name : null);
+            setEstado({ subiendo: false });
+          }}
+        />
+        <label
+          htmlFor={idArchivo}
+          className="flex cursor-pointer items-center gap-4 border border-dashed bg-card px-4 py-4 hover:border-primary"
+        >
+          <FileUp className="size-8 shrink-0 text-[#666]" aria-hidden />
+          <span className="grid gap-0.5">
+            <span className="font-medium">{elegido ? elegido : "Elegir archivo"}</span>
+            <span className="text-xs text-[#666]">
+              {elegido ? "Tocá para cambiarlo" : `PDF, presentación, documento o imagen · hasta ${LIMITE_MB} MB`}
+            </span>
+          </span>
+        </label>
         <textarea
           name="nota"
           rows={2}
@@ -68,7 +95,7 @@ export function SubirEntrega({ proyectoId, eventoId, hayVersiones }: { proyectoI
           aria-label="Nota de la versión"
           className="border bg-background px-2.5 py-2 text-sm outline-none focus-visible:border-ring"
         />
-        <p className="text-xs text-[#666]">Hasta {LIMITE_MB} MB. Las versiones anteriores no se borran: queda el historial.</p>
+        <p className="text-xs text-[#666]">Las versiones anteriores no se borran: queda el historial.</p>
         <div className="flex flex-wrap items-center gap-3">
           <Button type="submit" size="sm" disabled={estado.subiendo}>{estado.subiendo ? "Subiendo…" : "Subir"}</Button>
           {estado.error && <span className="text-destructive">{estado.error}</span>}
