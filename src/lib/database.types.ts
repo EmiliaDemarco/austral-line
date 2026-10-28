@@ -63,6 +63,76 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"alumnos_entregas": {
+                  Row: {
+                    "archivo_path": string,"created_at": string,"evento_id": string,"id": string,"nombre_archivo": string,"nota": string | null,"persona_id": string | null,"proyecto_id": string | null,"subida_por": string | null,"tamano_bytes": number,"version": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archivo_path": string,"created_at"?: string,"evento_id": string,"id"?: string,"nombre_archivo": string,"nota"?: string | null,"persona_id"?: string | null,"proyecto_id"?: string | null,"subida_por"?: string | null,"tamano_bytes": number,"version": number
+                  }
+                  Update: {
+                    "archivo_path"?: string,"created_at"?: string,"evento_id"?: string,"id"?: string,"nombre_archivo"?: string,"nota"?: string | null,"persona_id"?: string | null,"proyecto_id"?: string | null,"subida_por"?: string | null,"tamano_bytes"?: number,"version"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_entregas_evento_id_fkey"
+      columns: ["evento_id"]
+isOneToOne: false
+      referencedRelation: "eventos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_proyecto_id_fkey"
+      columns: ["proyecto_id"]
+isOneToOne: false
+      referencedRelation: "proyectos"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_subida_por_fkey"
+      columns: ["subida_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"alumnos_entregas_devoluciones": {
+                  Row: {
+                    "autor_id": string | null,"created_at": string,"entrega_id": string,"id": string,"respuesta_a": string | null,"texto": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "autor_id"?: string | null,"created_at"?: string,"entrega_id": string,"id"?: string,"respuesta_a"?: string | null,"texto": string
+                  }
+                  Update: {
+                    "autor_id"?: string | null,"created_at"?: string,"entrega_id"?: string,"id"?: string,"respuesta_a"?: string | null,"texto"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_entregas_devoluciones_autor_id_fkey"
+      columns: ["autor_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_devoluciones_entrega_id_fkey"
+      columns: ["entrega_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_entregas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_entregas_devoluciones_respuesta_a_fkey"
+      columns: ["respuesta_a"]
+isOneToOne: false
+      referencedRelation: "alumnos_entregas_devoluciones"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"alumnos_ideas": {
                   Row: {
                     "a_quien_le_pasa": string | null,"autor_id": string | null,"como_seria_resuelto": string | null,"created_at": string,"descripcion": string,"estado": string,"id": string,"interes_id": number | null,"que_se_intento": string | null,"titulo": string,"updated_at": string
@@ -144,6 +214,38 @@ isOneToOne: false
       columns: ["respuesta_a"]
 isOneToOne: false
       referencedRelation: "alumnos_ideas_mensajes"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"alumnos_ideas_reportes": {
+                  Row: {
+                    "created_at": string,"id": string,"idea_id": string,"mensaje_id": string | null,"motivo": string,"persona_id": string,"resuelto": boolean
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"id"?: string,"idea_id": string,"mensaje_id"?: string | null,"motivo": string,"persona_id": string,"resuelto"?: boolean
+                  }
+                  Update: {
+                    "created_at"?: string,"id"?: string,"idea_id"?: string,"mensaje_id"?: string | null,"motivo"?: string,"persona_id"?: string,"resuelto"?: boolean
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_ideas_reportes_idea_id_fkey"
+      columns: ["idea_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_ideas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_ideas_reportes_mensaje_id_fkey"
+      columns: ["mensaje_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_ideas_mensajes"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_ideas_reportes_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
       referencedColumns: ["id"]
     }
                   ]
@@ -771,14 +873,14 @@ isOneToOne: true
                   ]
                 },"mentores_resumenes": {
                   Row: {
-                    "asunto": string,"aviso": string | null,"aviso_util": boolean | null,"con_ia": boolean,"created_at": string,"email": string,"error": string | null,"estado": string,"html": string,"id": string,"leido_at": string | null,"programado_para": string | null,"resend_id": string | null,"reunion_id": string
+                    "asunto": string,"aviso": string | null,"aviso_mail_at": string | null,"aviso_util": boolean | null,"con_ia": boolean,"created_at": string,"email": string,"error": string | null,"estado": string,"html": string,"id": string,"le_sirvio": boolean | null,"leido_at": string | null,"minutos_ahorrados": number | null,"programado_para": string | null,"resend_id": string | null,"reunion_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "asunto": string,"aviso"?: string | null,"aviso_util"?: boolean | null,"con_ia": boolean,"created_at"?: string,"email": string,"error"?: string | null,"estado": string,"html": string,"id"?: string,"leido_at"?: string | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id": string
+                    "asunto": string,"aviso"?: string | null,"aviso_mail_at"?: string | null,"aviso_util"?: boolean | null,"con_ia": boolean,"created_at"?: string,"email": string,"error"?: string | null,"estado": string,"html": string,"id"?: string,"le_sirvio"?: boolean | null,"leido_at"?: string | null,"minutos_ahorrados"?: number | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id": string
                   }
                   Update: {
-                    "asunto"?: string,"aviso"?: string | null,"aviso_util"?: boolean | null,"con_ia"?: boolean,"created_at"?: string,"email"?: string,"error"?: string | null,"estado"?: string,"html"?: string,"id"?: string,"leido_at"?: string | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id"?: string
+                    "asunto"?: string,"aviso"?: string | null,"aviso_mail_at"?: string | null,"aviso_util"?: boolean | null,"con_ia"?: boolean,"created_at"?: string,"email"?: string,"error"?: string | null,"estado"?: string,"html"?: string,"id"?: string,"le_sirvio"?: boolean | null,"leido_at"?: string | null,"minutos_ahorrados"?: number | null,"programado_para"?: string | null,"resend_id"?: string | null,"reunion_id"?: string
                   }
                   Relationships: [
                     {
@@ -883,6 +985,15 @@ isOneToOne: false
           Functions: {
             "alumnos_guardar_perfil":
 { Args: { "p_busca_equipo": boolean,"p_carrera_id": number,"p_intereses": Json,"p_sobre_mi": string }; Returns: undefined
+                           },
+"alumnos_soy_integrante":
+{ Args: { "p_proyecto": string }; Returns: boolean
+                           },
+"alumnos_soy_mentor":
+{ Args: { "p_proyecto": string }; Returns: boolean
+                           },
+"alumnos_yo":
+{ Args: Record<PropertyKey, never>; Returns: string
                            },
 "austral_me_toca":
 { Args: { "p_proyecto": string }; Returns: boolean

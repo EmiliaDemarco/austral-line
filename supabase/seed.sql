@@ -167,6 +167,14 @@ from (values
 join personas pe on pe.email = v.email
 join alumnos_intereses_maestro m on m.nombre = v.interes;
 
+-- GRUPO ALUMNOS: grupos de ejemplo para ver la interdisciplinariedad en "Proyectos".
+-- Elena (Administración) se suma a Tutorly con Bruno (Negocios Digitales): interdisciplinario.
+-- Carla (Marketing) queda sola en Reciclá: una sola carrera, con sugerencias. Ana (AgroSense) no tiene perfil.
+insert into proyecto_integrantes (proyecto_id, persona_id)
+select p.id, pe.id from proyectos p, personas pe
+where p.nombre = 'Tutorly' and pe.email = 'elena@alumnos.austral.edu.ar'
+on conflict do nothing;
+
 -- GRUPO ALUMNOS: ideas de ejemplo para el banco de problemas e ideas.
 insert into alumnos_ideas (autor_id, titulo, descripcion, interes_id, estado)
 select pe.id, v.titulo, v.descripcion, m.id, v.estado
@@ -209,3 +217,9 @@ with pregunta as (
 insert into alumnos_ideas_mensajes (idea_id, autor_id, respuesta_a, texto)
 select pregunta.idea_id, pe.id, pregunta.id, 'Sí, mi familia trabaja con varios en San Pedro. Les puedo preguntar.'
 from pregunta, personas pe where pe.email = 'diego@alumnos.austral.edu.ar';
+
+-- GRUPO ALUMNOS: un reporte pendiente de ejemplo, para ver la moderación en el Panel de profesores.
+insert into alumnos_ideas_reportes (idea_id, persona_id, motivo)
+select i.id, pe.id, 'Me parece que repite una idea que ya está en el banco con otro nombre.'
+from alumnos_ideas i, personas pe
+where i.titulo = 'Finanzas personales para estudiantes' and pe.email = 'carla@alumnos.austral.edu.ar';
