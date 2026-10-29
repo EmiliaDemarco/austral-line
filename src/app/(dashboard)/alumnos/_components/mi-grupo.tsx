@@ -117,13 +117,17 @@ export async function MiGrupo({ personaId, guardadoEn }: { personaId: string; gu
 
             {estado === "Faltan perfiles" && (
               <p className="text-sm">
-                Falta la carrera de{" "}
-                {sinCarrera.map((m) => (m.persona_id === personaId ? "vos" : m.personas.nombre)).join(", ")}. Cada uno la
-                elige en Mi perfil.
                 {sinCarrera.some((m) => m.persona_id === personaId) && (
                   <>
-                    {" "}
-                    <Link href="/alumnos/perfil" className="underline underline-offset-4">Completar mi perfil</Link>
+                    Te falta elegir tu carrera.{" "}
+                    <Link href="/alumnos/perfil" className="underline underline-offset-4">Completar mi perfil</Link>{" "}
+                  </>
+                )}
+                {sinCarrera.some((m) => m.persona_id !== personaId) && (
+                  <>
+                    Falta la carrera de{" "}
+                    {sinCarrera.filter((m) => m.persona_id !== personaId).map((m) => m.personas.nombre).join(", ")}: cada uno la
+                    elige en Mi perfil.
                   </>
                 )}
               </p>
