@@ -243,9 +243,11 @@ $$;
 create function public.alumnos_candidatos(p_propuesta uuid)
 returns table (persona_id uuid, nombre text, email text, carrera text, busca_equipo boolean)
 language plpgsql stable security definer set search_path = public as $$
+#variable_conflict use_column
 begin
   if not exists (
-    select 1 from alumnos_propuesta_miembros where propuesta_id = p_propuesta and persona_id = alumnos_yo() and estado = 'aceptado'
+    select 1 from alumnos_propuesta_miembros yo
+    where yo.propuesta_id = p_propuesta and yo.persona_id = alumnos_yo() and yo.estado = 'aceptado'
   ) then return; end if;
   return query
     select pe.id, pe.nombre, pe.email,
