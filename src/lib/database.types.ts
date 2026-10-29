@@ -148,14 +148,14 @@ isOneToOne: false
 =======
                 },"alumnos_grupo_intereses_calculo": {
                   Row: {
-                    "calculado_at": string,"calculado_por": string | null,"integrantes": string[],"proyecto_id": string
+                    "calculado_at": string,"calculado_por": string | null,"integrantes": (string)[],"proyecto_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "calculado_at"?: string,"calculado_por"?: string | null,"integrantes": string[],"proyecto_id": string
+                    "calculado_at"?: string,"calculado_por"?: string | null,"integrantes": (string)[],"proyecto_id": string
                   }
                   Update: {
-                    "calculado_at"?: string,"calculado_por"?: string | null,"integrantes"?: string[],"proyecto_id"?: string
+                    "calculado_at"?: string,"calculado_por"?: string | null,"integrantes"?: (string)[],"proyecto_id"?: string
                   }
                   Relationships: [
                     {
@@ -1059,7 +1059,7 @@ isOneToOne: false
 "alumnos_es_mi_proyecto":
 { Args: { "p_proyecto": string }; Returns: boolean
                            },
-            "alumnos_guardar_perfil":
+"alumnos_guardar_perfil":
 { Args: { "p_busca_equipo": boolean,"p_carrera_id": number,"p_intereses": Json,"p_sobre_mi": string }; Returns: undefined
                            },
 "alumnos_soy_integrante":
