@@ -93,7 +93,9 @@ export async function MiGrupo({ personaId, guardadoEn }: { personaId: string; gu
                   ? `Tiene integrantes de ${distintas.length} carreras: ${distintas.join(", ")}.`
                   : estado === "Una sola carrera"
                     ? `Todos son de ${distintas[0]}. Necesitan al menos ${MINIMO_CARRERAS} carreras distintas.`
-                    : "Falta que algunos integrantes elijan su carrera.";
+                    : sinCarrera.length === 1 && sinCarrera[0].persona_id === personaId
+                      ? "Te falta elegir tu carrera en Mi perfil."
+                      : "Falta que algunos integrantes elijan su carrera en Mi perfil.";
               return (
                 <div role="status" className={cn("flex items-center gap-4 border-2 px-5 py-4", clase)}>
                   <Icono className="size-8 shrink-0" aria-hidden />
@@ -117,18 +119,15 @@ export async function MiGrupo({ personaId, guardadoEn }: { personaId: string; gu
 
             {estado === "Faltan perfiles" && (
               <p className="text-sm">
-                {sinCarrera.some((m) => m.persona_id === personaId) && (
-                  <>
-                    Te falta elegir tu carrera.{" "}
-                    <Link href="/alumnos/perfil" className="underline underline-offset-4">Completar mi perfil</Link>{" "}
-                  </>
-                )}
                 {sinCarrera.some((m) => m.persona_id !== personaId) && (
                   <>
-                    Falta la carrera de{" "}
-                    {sinCarrera.filter((m) => m.persona_id !== personaId).map((m) => m.personas.nombre).join(", ")}: cada uno la
-                    elige en Mi perfil.
+                    {sinCarrera.filter((m) => m.persona_id !== personaId).length === 1 ? "Le falta elegirla a " : "Les falta elegirla a "}
+                    {sinCarrera.filter((m) => m.persona_id !== personaId).map((m) => m.personas.nombre).join(", ")}
+                    {sinCarrera.some((m) => m.persona_id === personaId) ? " y a vos. " : ". "}
                   </>
+                )}
+                {sinCarrera.some((m) => m.persona_id === personaId) && (
+                  <Link href="/alumnos/perfil" className="underline underline-offset-4">Elegir mi carrera</Link>
                 )}
               </p>
             )}
