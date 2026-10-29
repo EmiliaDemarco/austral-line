@@ -8,7 +8,15 @@ import { guardarEstrella } from "../perfil/_acciones";
 
 type Estado = { tipo: "guardando" | "ok" | "error"; texto: string } | null;
 
-export function AutoGuardado({ temas, children }: { temas: { id: number; nombre: string }[]; children: React.ReactNode }) {
+export function AutoGuardado({
+  temas,
+  perfilCreado,
+  children,
+}: {
+  temas: { id: number; nombre: string }[];
+  perfilCreado: boolean;
+  children: React.ReactNode;
+}) {
   const [estado, setEstado] = useState<Estado>(null);
   const ultimoValor = useRef(new Map<string, string>());
   const contenedor = useRef<HTMLDivElement>(null);
@@ -48,7 +56,10 @@ export function AutoGuardado({ temas, children }: { temas: { id: number; nombre:
         className={`mb-2 flex min-h-5 items-center gap-1.5 text-sm ${estado?.tipo === "error" ? "text-destructive" : "text-[#666]"}`}
       >
         {estado?.tipo === "ok" && <Check className="size-4" aria-hidden />}
-        {estado?.texto ?? "Las estrellas se guardan solas apenas las tocás."}
+        {estado?.texto ??
+          (perfilCreado
+            ? "Las estrellas se guardan solas apenas las tocás."
+            : "Las estrellas se guardan solas apenas las tocás. Para terminar tu perfil, elegí tu carrera y tocá Guardar perfil.")}
       </p>
       {children}
     </div>

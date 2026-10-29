@@ -131,8 +131,8 @@ export default async function MiPerfil({ searchParams }: PageProps<"/alumnos/per
                 ))}
               </div>
             );
-            // Con el perfil ya creado, cada estrella se guarda sola. La primera vez se guarda todo junto con el botón.
-            return perfil ? <AutoGuardado temas={maestro}>{filas}</AutoGuardado> : filas;
+            // Cada estrella se guarda sola al tocarla, también antes de armar el perfil (así no se pierde nada).
+            return <AutoGuardado temas={maestro} perfilCreado={!!perfil}>{filas}</AutoGuardado>;
           })()}
         </section>
 
