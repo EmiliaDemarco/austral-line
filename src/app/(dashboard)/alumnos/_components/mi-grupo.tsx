@@ -9,6 +9,7 @@ import { CircleAlert, CircleCheck, CircleHelp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { evaluarGrupo, MINIMO_CARRERAS } from "../_lib/interdisciplina";
 import { InteresesGrupo } from "./intereses-grupo";
+import { GruposCompatibles } from "./grupos-compatibles";
 
 const SUGERENCIAS = 3;
 
@@ -165,6 +166,7 @@ export async function MiGrupo({ personaId, guardadoEn }: { personaId: string; gu
               miembros={miembros.map((m) => ({ id: m.persona_id, nombre: m.personas.nombre }))}
               guardado={guardadoEn === proyectoId}
             />
+            <GruposCompatibles proyectoId={proyectoId} />
           </article>
         );
       })}
