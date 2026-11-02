@@ -3,6 +3,11 @@
 -- que les interesan mucho y suman carreras. Es solo una sugerencia: la ven los profesores (todos los pares) y
 -- cada grupo (los suyos). Si deciden unirse, el cambio se pide como siempre.
 -- Intereses de cada grupo: los propios del grupo si ya los armaron; si no, el promedio de sus integrantes.
+--
+-- Privacidad: la función es security definer (necesita las carreras e intereses de todos para calcular),
+-- así que el detalle (temas en común, choques y carreras que suma cada uno) se devuelve solo a los
+-- profesores. A un alumno le llegan solo los pares de su grupo, con nombre, cantidad de integrantes y
+-- puntaje; el detalle viene vacío (null). Así no se pueden deducir la carrera ni las estrellas de nadie.
 
 create function public.alumnos_grupos_compatibles()
 returns table (
@@ -11,7 +16,7 @@ returns table (
   temas_comunes text[], choques text[], carreras_solo_a text[], carreras_solo_b text[], puntaje integer
 )
 language sql stable security definer set search_path = public as $$
-  with yo as (select alumnos_yo() as id, mi_rol() as rol),
+  with yo as (select mi_persona_id() as id, mi_rol() as rol),
   tam as (select proyecto_id, count(*)::integer as n from proyecto_integrantes group by proyecto_id),
   carreras as (
     select distinct i.proyecto_id, c.carrera_id
@@ -22,7 +27,7 @@ language sql stable security definer set search_path = public as $$
     union all
     select i.proyecto_id, r.interes_id, round(avg(r.estrellas))
     from proyecto_integrantes i join alumnos_intereses r on r.persona_id = i.persona_id
-    where i.proyecto_id not in (select proyecto_id from alumnos_grupo_intereses_calculo)
+    where i.proyecto_id not in (select proyecto_id from alumnos_grupo_intereses)
     group by i.proyecto_id, r.interes_id
   ),
   pares as (
@@ -58,7 +63,11 @@ language sql stable security definer set search_path = public as $$
       ) as solo_b
     from pares p
   )
-  select c.pa, pa.nombre, c.na, c.pb, pb.nombre, c.nb, c.comunes, c.choques, c.solo_a, c.solo_b,
+  select c.pa, pa.nombre, c.na, c.pb, pb.nombre, c.nb,
+         case when yo.rol = 'admin' then c.comunes end,
+         case when yo.rol = 'admin' then c.choques end,
+         case when yo.rol = 'admin' then c.solo_a end,
+         case when yo.rol = 'admin' then c.solo_b end,
          (2 * cardinality(c.comunes) - 3 * cardinality(c.choques) + case when cardinality(c.solo_a) + cardinality(c.solo_b) > 0 then 3 else 0 end)::integer
   from calculo c
   join proyectos pa on pa.id = c.pa

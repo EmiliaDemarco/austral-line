@@ -289,9 +289,9 @@ export default async function PanelDeProfesores({ searchParams }: PageProps<"/al
                 <TableRow key={`${p.proyecto_a}-${p.proyecto_b}`}>
                   <TableCell>{p.nombre_a} ({p.integrantes_a}) + {p.nombre_b} ({p.integrantes_b})</TableCell>
                   <TableCell className="tabular-nums">{p.integrantes_a + p.integrantes_b}</TableCell>
-                  <TableCell>{p.temas_comunes.join(", ") || "—"}</TableCell>
-                  <TableCell>{[...p.carreras_solo_a, ...p.carreras_solo_b].join(", ") || "—"}</TableCell>
-                  <TableCell className="text-[#666]">{p.choques.join(", ") || "—"}</TableCell>
+                  <TableCell>{(p.temas_comunes ?? []).join(", ") || "—"}</TableCell>
+                  <TableCell>{[...(p.carreras_solo_a ?? []), ...(p.carreras_solo_b ?? [])].join(", ") || "—"}</TableCell>
+                  <TableCell className="text-[#666]">{(p.choques ?? []).join(", ") || "—"}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
