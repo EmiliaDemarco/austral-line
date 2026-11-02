@@ -75,11 +75,5 @@ export async function pedirCambio(formData: FormData) {
 }
 
 export async function cancelarSolicitud(formData: FormData) {
-  await requireRol("alumno");
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("alumnos_solicitudes_cambio")
-    .update({ estado: "cancelada" })
-    .eq("id", String(formData.get("solicitud_id")));
-  volver(error ? { error: `No se pudo cancelar: ${error.message}` } : { ok: "Cancelaste la solicitud." });
+  await llamar((s) => s.rpc("alumnos_cancelar_solicitud", { p_solicitud: String(formData.get("solicitud_id")) }), "Cancelaste la solicitud.");
 }

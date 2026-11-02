@@ -68,7 +68,7 @@ export default async function ArmarGrupo({ searchParams }: PageProps<"/alumnos/g
     supabase
       .from("alumnos_propuestas")
       .select(
-        "id, nombre, estado, comentario_profesores, creada_por, alumnos_ideas(titulo), alumnos_propuesta_miembros(persona_id, estado, invitado_por, personas!alumnos_propuesta_miembros_persona_id_fkey(nombre, email))",
+        "id, nombre, estado, comentario_profesores, creada_por, alumnos_ideas(titulo), alumnos_propuesta_miembros(persona_id, estado, invitado_por, personas!alumnos_propuesta_miembros_persona_id_fkey(nombre))",
       )
       .in("estado", ["armando", "enviada"])
       .order("created_at"),

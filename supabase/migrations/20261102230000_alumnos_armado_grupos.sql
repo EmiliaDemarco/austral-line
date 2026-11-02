@@ -52,7 +52,22 @@ create table alumnos_propuesta_miembros (
 -- política de miembros pueda usarla sin consultarse a sí misma.
 create function public.alumnos_mis_propuestas() returns setof uuid
 language sql stable security definer set search_path = public as $$
-  select propuesta_id from alumnos_propuesta_miembros where persona_id = alumnos_yo()
+  select propuesta_id from alumnos_propuesta_miembros where persona_id = mi_persona_id()
+$$;
+
+-- Integrantes que ya aceptaron una propuesta activa (en armado o enviada) donde yo estoy invitado o
+-- soy integrante. Solo de ellos se ve la carrera: un invitado que todavía no aceptó, o que rechazó,
+-- no muestra la suya.
+create function public.alumnos_companeros_de_propuesta() returns setof uuid
+language sql stable security definer set search_path = public as $$
+  select m.persona_id
+  from alumnos_propuesta_miembros m
+  join alumnos_propuestas p on p.id = m.propuesta_id
+  where m.estado = 'aceptado' and p.estado in ('armando', 'enviada')
+    and exists (
+      select 1 from alumnos_propuesta_miembros yo
+      where yo.propuesta_id = m.propuesta_id and yo.persona_id = mi_persona_id() and yo.estado in ('invitado', 'aceptado')
+    )
 $$;
 
 alter table alumnos_propuestas enable row level security;
@@ -67,12 +82,9 @@ create policy "admin todo" on alumnos_propuesta_miembros for all to authenticate
 create policy "alumno ve los de sus propuestas" on alumnos_propuesta_miembros for select to authenticated
   using (mi_rol() = 'alumno' and propuesta_id in (select alumnos_mis_propuestas()));
 
--- Para chequear la interdisciplinariedad, cada alumno ve la carrera de quienes están en sus propuestas.
+-- Para chequear la interdisciplinariedad, cada alumno ve la carrera de quienes ya aceptaron sus propuestas activas.
 create policy "alumno ve la carrera de los de sus propuestas" on alumnos_carreras for select to authenticated
-  using (
-    mi_rol() = 'alumno'
-    and persona_id in (select persona_id from alumnos_propuesta_miembros where propuesta_id in (select alumnos_mis_propuestas()))
-  );
+  using (mi_rol() = 'alumno' and persona_id in (select alumnos_companeros_de_propuesta()));
 
 -- Solicitudes de cambio de grupo ---------------------------------------------------------------
 -- proyecto_destino = null: pide salir del grupo.
@@ -97,17 +109,17 @@ alter table alumnos_solicitudes_cambio enable row level security;
 create policy "admin todo" on alumnos_solicitudes_cambio for all to authenticated
   using (mi_rol() = 'admin') with check (mi_rol() = 'admin');
 create policy "alumno ve las suyas" on alumnos_solicitudes_cambio for select to authenticated
-  using (mi_rol() = 'alumno' and persona_id = alumnos_yo());
+  using (mi_rol() = 'alumno' and persona_id = mi_persona_id());
+-- El alumno solo carga el pedido: la respuesta de los profesores queda vacía.
 create policy "alumno pide desde su grupo" on alumnos_solicitudes_cambio for insert to authenticated
   with check (
     mi_rol() = 'alumno'
-    and persona_id = alumnos_yo()
+    and persona_id = mi_persona_id()
     and estado = 'pendiente'
-    and exists (select 1 from proyecto_integrantes where proyecto_id = proyecto_origen and persona_id = alumnos_yo())
+    and respuesta is null and resuelta_por is null and resuelta_at is null
+    and exists (select 1 from proyecto_integrantes where proyecto_id = proyecto_origen and persona_id = mi_persona_id())
   );
-create policy "alumno cancela la suya pendiente" on alumnos_solicitudes_cambio for update to authenticated
-  using (mi_rol() = 'alumno' and persona_id = alumnos_yo() and estado = 'pendiente')
-  with check (mi_rol() = 'alumno' and persona_id = alumnos_yo() and estado = 'cancelada');
+-- Para cancelar no hay regla de update: lo hace alumnos_cancelar_solicitud, que solo cambia el estado.
 
 -- Reglas comunes ------------------------------------------------------------------------------
 -- ¿La persona ya está en un proyecto o en una propuesta activa?
@@ -121,15 +133,28 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 -- Acciones de los alumnos (security definer: validan todo antes de escribir en tablas de este grupo) --
+-- ¿La idea se puede elegir? Tiene que estar disponible y que no la use otra propuesta activa.
+create function public.alumnos_idea_libre(p_idea uuid, p_salvo uuid default null) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from alumnos_ideas where id = p_idea and estado = 'disponible')
+     and not exists (
+       select 1 from alumnos_propuestas
+       where idea_id = p_idea and estado in ('armando', 'enviada') and id is distinct from p_salvo
+     )
+$$;
+
 create function public.alumnos_crear_propuesta(p_nombre text, p_idea uuid default null) returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
-  yo uuid := alumnos_yo();
+  yo uuid := mi_persona_id();
   nueva uuid;
 begin
-  if mi_rol() <> 'alumno' then raise exception 'Solo los alumnos proponen grupos.'; end if;
+  if mi_rol() is distinct from 'alumno' then raise exception 'Solo los alumnos proponen grupos.'; end if;
   if not alumnos_armado_abierto() then raise exception 'El armado de grupos ya cerró: hablá con los profesores.'; end if;
   if alumnos_ocupado(yo) then raise exception 'Ya estás en un grupo o en una propuesta.'; end if;
+  if p_idea is not null and not alumnos_idea_libre(p_idea) then
+    raise exception 'Esa idea ya la tomó otro grupo o ya no está disponible. Elegí otra o dejala para más adelante.';
+  end if;
   insert into alumnos_propuestas (nombre, idea_id, creada_por) values (btrim(p_nombre), p_idea, yo) returning id into nueva;
   insert into alumnos_propuesta_miembros (propuesta_id, persona_id, estado, invitado_por, respondido_at)
   values (nueva, yo, 'aceptado', yo, now());
@@ -140,7 +165,7 @@ $$;
 create function public.alumnos_invitar(p_propuesta uuid, p_persona uuid) returns void
 language plpgsql security definer set search_path = public as $$
 declare
-  yo uuid := alumnos_yo();
+  yo uuid := mi_persona_id();
 begin
   if not exists (
     select 1 from alumnos_propuesta_miembros m join alumnos_propuestas p on p.id = m.propuesta_id
@@ -163,14 +188,15 @@ $$;
 create function public.alumnos_responder_invitacion(p_propuesta uuid, p_acepta boolean) returns void
 language plpgsql security definer set search_path = public as $$
 declare
-  yo uuid := alumnos_yo();
+  yo uuid := mi_persona_id();
 begin
+  if not alumnos_armado_abierto() then raise exception 'El armado de grupos ya cerró: hablá con los profesores.'; end if;
   if not exists (select 1 from alumnos_propuesta_miembros where propuesta_id = p_propuesta and persona_id = yo and estado = 'invitado') then
     raise exception 'No tenés una invitación pendiente a ese grupo.';
   end if;
   if p_acepta then
     if alumnos_ocupado(yo) then raise exception 'Ya estás en un grupo o en otra propuesta: salí de esa antes de aceptar.'; end if;
-    if (select estado from alumnos_propuestas where id = p_propuesta) <> 'armando' then
+    if (select estado from alumnos_propuestas where id = p_propuesta) is distinct from 'armando' then
       raise exception 'Esa propuesta ya no está en armado.';
     end if;
     if (select count(*) from alumnos_propuesta_miembros where propuesta_id = p_propuesta and estado = 'aceptado') >= 6 then
@@ -186,7 +212,7 @@ $$;
 create function public.alumnos_salir_propuesta(p_propuesta uuid) returns void
 language plpgsql security definer set search_path = public as $$
 declare
-  yo uuid := alumnos_yo();
+  yo uuid := mi_persona_id();
   otro uuid;
 begin
   if not exists (
@@ -213,7 +239,7 @@ $$;
 create function public.alumnos_enviar_propuesta(p_propuesta uuid) returns void
 language plpgsql security definer set search_path = public as $$
 declare
-  yo uuid := alumnos_yo();
+  yo uuid := mi_persona_id();
   cantidad integer;
   sin_carrera integer;
   carreras integer;
@@ -247,13 +273,14 @@ language plpgsql stable security definer set search_path = public as $$
 begin
   if not exists (
     select 1 from alumnos_propuesta_miembros yo
-    where yo.propuesta_id = p_propuesta and yo.persona_id = alumnos_yo() and yo.estado = 'aceptado'
+    where yo.propuesta_id = p_propuesta and yo.persona_id = mi_persona_id() and yo.estado = 'aceptado'
   ) then return; end if;
   return query
-    select pe.id, pe.nombre, pe.email,
+    select pe.id, pe.nombre, pc.email,
            case when coalesce(pf.busca_equipo, false) then cm.nombre end,
            coalesce(pf.busca_equipo, false)
     from personas pe
+    join personas_contacto pc on pc.id = pe.id
     left join alumnos_perfiles pf on pf.persona_id = pe.id
     left join alumnos_carreras c on c.persona_id = pe.id
     left join alumnos_carreras_maestro cm on cm.id = c.carrera_id
@@ -267,6 +294,17 @@ begin
 end;
 $$;
 
+-- El alumno cancela su solicitud pendiente: solo cambia el estado, nada más.
+create function public.alumnos_cancelar_solicitud(p_solicitud uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if mi_rol() is distinct from 'alumno' then raise exception 'Solo los alumnos cancelan sus solicitudes.'; end if;
+  update alumnos_solicitudes_cambio set estado = 'cancelada'
+  where id = p_solicitud and persona_id = mi_persona_id() and estado = 'pendiente';
+  if not found then raise exception 'No tenés una solicitud pendiente con ese número.'; end if;
+end;
+$$;
+
 -- Acciones de los profesores (security invoker: usan sus permisos de admin sobre el core) ---------
 create function public.alumnos_aprobar_propuesta(p_propuesta uuid) returns uuid
 language plpgsql security invoker set search_path = public as $$
@@ -274,13 +312,16 @@ declare
   prop alumnos_propuestas%rowtype;
   nuevo uuid;
 begin
-  if mi_rol() <> 'admin' then raise exception 'Solo los profesores aprueban grupos.'; end if;
+  if mi_rol() is distinct from 'admin' then raise exception 'Solo los profesores aprueban grupos.'; end if;
   select * into prop from alumnos_propuestas where id = p_propuesta for update;
   if prop.id is null or prop.estado <> 'enviada' then raise exception 'La propuesta no está esperando aprobación.'; end if;
   if exists (
     select 1 from alumnos_propuesta_miembros m join proyecto_integrantes i on i.persona_id = m.persona_id
     where m.propuesta_id = p_propuesta and m.estado = 'aceptado'
   ) then raise exception 'Algún integrante ya está en otro proyecto.'; end if;
+  if prop.idea_id is not null and not alumnos_idea_libre(prop.idea_id, prop.id) then
+    raise exception 'La idea de esta propuesta ya la tomó otro grupo: devolvésela para que elijan otra.';
+  end if;
 
   insert into proyectos (nombre, descripcion)
   values (prop.nombre, (select descripcion from alumnos_ideas where id = prop.idea_id))
@@ -298,7 +339,7 @@ $$;
 create function public.alumnos_devolver_propuesta(p_propuesta uuid, p_comentario text) returns void
 language plpgsql security invoker set search_path = public as $$
 begin
-  if mi_rol() <> 'admin' then raise exception 'Solo los profesores devuelven propuestas.'; end if;
+  if mi_rol() is distinct from 'admin' then raise exception 'Solo los profesores devuelven propuestas.'; end if;
   update alumnos_propuestas
   set estado = 'armando', comentario_profesores = nullif(btrim(p_comentario), ''), updated_at = now()
   where id = p_propuesta and estado = 'enviada';
@@ -311,7 +352,7 @@ language plpgsql security invoker set search_path = public as $$
 declare
   sol alumnos_solicitudes_cambio%rowtype;
 begin
-  if mi_rol() <> 'admin' then raise exception 'Solo los profesores resuelven solicitudes.'; end if;
+  if mi_rol() is distinct from 'admin' then raise exception 'Solo los profesores resuelven solicitudes.'; end if;
   select * into sol from alumnos_solicitudes_cambio where id = p_solicitud for update;
   if sol.id is null or sol.estado <> 'pendiente' then raise exception 'La solicitud ya fue resuelta.'; end if;
   if p_aprobar then
@@ -327,25 +368,28 @@ begin
   end if;
   update alumnos_solicitudes_cambio
   set estado = case when p_aprobar then 'aprobada' else 'rechazada' end,
-      respuesta = nullif(btrim(p_respuesta), ''), resuelta_por = alumnos_yo(), resuelta_at = now()
+      respuesta = nullif(btrim(p_respuesta), ''), resuelta_por = mi_persona_id(), resuelta_at = now()
   where id = p_solicitud;
 end;
 $$;
 
--- Permisos de ejecución: solo usuarios logueados ---------------------------------------------
+-- Permisos de ejecución ----------------------------------------------------------------------
+-- alumnos_ocupado no se habilita: solo la usan otras funciones security definer. alumnos_idea_libre sí,
+-- porque la usa alumnos_aprobar_propuesta, que corre con los permisos del profesor.
 revoke execute on function
-  public.alumnos_armado_abierto(), public.alumnos_mis_propuestas(), public.alumnos_ocupado(uuid),
+  public.alumnos_armado_abierto(), public.alumnos_mis_propuestas(), public.alumnos_companeros_de_propuesta(),
+  public.alumnos_ocupado(uuid), public.alumnos_idea_libre(uuid, uuid),
   public.alumnos_crear_propuesta(text, uuid), public.alumnos_invitar(uuid, uuid),
   public.alumnos_responder_invitacion(uuid, boolean), public.alumnos_salir_propuesta(uuid),
-  public.alumnos_enviar_propuesta(uuid), public.alumnos_candidatos(uuid),
+  public.alumnos_enviar_propuesta(uuid), public.alumnos_candidatos(uuid), public.alumnos_cancelar_solicitud(uuid),
   public.alumnos_aprobar_propuesta(uuid), public.alumnos_devolver_propuesta(uuid, text),
   public.alumnos_resolver_solicitud(uuid, boolean, text)
-from public, anon;
+from public, anon, authenticated;
 grant execute on function
-  public.alumnos_armado_abierto(), public.alumnos_mis_propuestas(), public.alumnos_ocupado(uuid),
-  public.alumnos_crear_propuesta(text, uuid), public.alumnos_invitar(uuid, uuid),
+  public.alumnos_armado_abierto(), public.alumnos_mis_propuestas(), public.alumnos_companeros_de_propuesta(),
+  public.alumnos_idea_libre(uuid, uuid), public.alumnos_crear_propuesta(text, uuid), public.alumnos_invitar(uuid, uuid),
   public.alumnos_responder_invitacion(uuid, boolean), public.alumnos_salir_propuesta(uuid),
-  public.alumnos_enviar_propuesta(uuid), public.alumnos_candidatos(uuid),
+  public.alumnos_enviar_propuesta(uuid), public.alumnos_candidatos(uuid), public.alumnos_cancelar_solicitud(uuid),
   public.alumnos_aprobar_propuesta(uuid), public.alumnos_devolver_propuesta(uuid, text),
   public.alumnos_resolver_solicitud(uuid, boolean, text)
 to authenticated;

@@ -45,7 +45,7 @@ export default async function AprobarGrupos({ searchParams }: PageProps<"/alumno
       .eq("estado", "pendiente")
       .order("created_at"),
     supabase.from("proyecto_integrantes").select("persona_id"),
-    supabase.from("personas").select("id, nombre, email").eq("rol", "alumno").order("nombre"),
+    supabase.from("personas_contacto").select("id, nombre, email").eq("rol", "alumno").order("nombre"),
   ]);
   for (const r of [config, propuestas, carreras, solicitudes, integrantes, alumnos]) if (r.error) throw r.error;
 
