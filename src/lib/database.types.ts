@@ -1681,20 +1681,20 @@ isOneToOne: false
                 }
           }
           Functions: {
-"alumnos_analisis_hoy":
-{ Args: { "p_proyecto": string }; Returns: number
-                           },
-            "alumnos_calcular_intereses_grupo":
+            "alumnos_analisis_hoy":
 { Args: { "p_proyecto": string }; Returns: number
                            },
 "alumnos_analisis_limite":
 { Args: Record<PropertyKey, never>; Returns: number
                            },
+"alumnos_calcular_intereses_grupo":
+{ Args: { "p_proyecto": string }; Returns: number
+                           },
 "alumnos_cierre_hito":
 { Args: { "p_evento": string }; Returns: string
                            },
 "alumnos_completar_analisis":
-{ Args: { "p_analisis": string,"p_modelo": string,"p_resultado"?: Json }; Returns: undefined
+{ Args: { "p_analisis": string,"p_modelo"?: string,"p_resultado"?: Json }; Returns: undefined
                            },
 "alumnos_editar_nota_entrega":
 { Args: { "p_entrega": string,"p_nota": string }; Returns: undefined
