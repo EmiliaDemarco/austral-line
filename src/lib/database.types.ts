@@ -23,7 +23,21 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "alumnos_carreras": {
+            "alumnos_armado_config": {
+                  Row: {
+                    "cierre": string | null,"id": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cierre"?: string | null,"id"?: number,"updated_at"?: string
+                  }
+                  Update: {
+                    "cierre"?: string | null,"id"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"alumnos_carreras": {
                   Row: {
                     "carrera_id": number,"created_at": string,"persona_id": string
                   }
@@ -54,20 +68,6 @@ isOneToOne: true
       referencedRelation: "personas_contacto"
       referencedColumns: ["id"]
     }
-                  ]
-                },"alumnos_armado_config": {
-                  Row: {
-                    "cierre": string | null,"id": number,"updated_at": string
-                  }
-                  ComputedFields: never
-                  Insert: {
-                    "cierre"?: string | null,"id"?: number,"updated_at"?: string
-                  }
-                  Update: {
-                    "cierre"?: string | null,"id"?: number,"updated_at"?: string
-                  }
-                  Relationships: [
-                    
                   ]
                 },"alumnos_carreras_maestro": {
                   Row: {
@@ -1763,13 +1763,13 @@ isOneToOne: false
                 }
           }
           Functions: {
-"alumnos_aprobar_propuesta":
+            "alumnos_aprobar_propuesta":
 { Args: { "p_propuesta": string }; Returns: string
                            },
 "alumnos_armado_abierto":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
-            "alumnos_calcular_intereses_grupo":
+"alumnos_calcular_intereses_grupo":
 { Args: { "p_proyecto": string }; Returns: number
                            },
 "alumnos_cancelar_solicitud":
