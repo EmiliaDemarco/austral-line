@@ -15,6 +15,18 @@ const volver = (proyectoId: string, aviso?: { error?: string; ok?: string }) => 
   redirect(`/alumnos/competencia?proyecto=${encodeURIComponent(proyectoId)}${q}`);
 };
 
+// Error de la IA en palabras claras (sin los códigos de color que trae el mensaje original).
+function mensajeDeError(e: unknown) {
+  const original = (e instanceof Error ? e.message : String(e)).replace(/\u001b\[[0-9;]*m/g, "");
+  if (/unauthenticated|api key|401|403/i.test(original)) {
+    return "La clave de IA no funciona (el servicio la rechazó). Avisales a los profesores para que la revisen.";
+  }
+  if (/credit|quota|insufficient|402/i.test(original)) {
+    return "La cuenta de IA se quedó sin crédito. Avisales a los profesores.";
+  }
+  return `La IA no pudo terminar el análisis (${original.slice(0, 200)}). Probá de nuevo en un rato.`;
+}
+
 const texto = (formData: FormData, campo: string) => String(formData.get(campo) ?? "").trim();
 
 export async function guardarBreve(formData: FormData) {
@@ -55,7 +67,7 @@ export async function analizar(formData: FormData) {
   try {
     resultado = await analizarCompetencia({ nombre: proyecto!.nombre, ...breve! });
   } catch (e) {
-    volver(proyectoId, { error: `La IA no pudo terminar el análisis (${e instanceof Error ? e.message : "error desconocido"}). Probá de nuevo en un rato.` });
+    volver(proyectoId, { error: mensajeDeError(e) });
   }
 
   const { error } = await supabase.from("alumnos_competencia_analisis").insert({
