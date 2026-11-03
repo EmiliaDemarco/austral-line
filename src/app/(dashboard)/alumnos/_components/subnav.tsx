@@ -12,6 +12,7 @@ const pestanas = [
   { href: "/alumnos/ideas", label: "Banco de ideas" },
   { href: "/alumnos/hitos", label: "Próximos hitos" },
   { href: "/alumnos/entregas", label: "Entregas" },
+  { href: "/alumnos/puntaje", label: "Puntaje" },
 ];
 
 // Solo la ven los profesores (rol admin).
