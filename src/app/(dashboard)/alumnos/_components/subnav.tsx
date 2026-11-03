@@ -13,7 +13,11 @@ const pestanas = [
   { href: "/alumnos/ideas", label: "Banco de ideas" },
   { href: "/alumnos/hitos", label: "Próximos hitos" },
   { href: "/alumnos/entregas", label: "Entregas" },
+  { href: "/alumnos/competencia", label: "Competencia" },
 ];
+
+// Lo que usan los mentores: las entregas y la competencia de sus grupos.
+const deMentores = ["/alumnos/entregas", "/alumnos/competencia"];
 
 // Solo las ven los profesores (rol admin).
 const pestanasProfesores = [
@@ -21,11 +25,11 @@ const pestanasProfesores = [
   { href: "/alumnos/aprobaciones", label: "Aprobar grupos" },
 ];
 
-// Los mentores solo usan Entregas (ven las de sus grupos y dejan devoluciones).
+// Los mentores solo usan Entregas (ven las de sus grupos y dejan devoluciones) y Competencia (solo lectura).
 export function SubNav({ esProfesor = false, soloEntregas = false }: { esProfesor?: boolean; soloEntregas?: boolean }) {
   const pathname = usePathname();
   const visibles = soloEntregas
-    ? pestanas.filter((p) => p.href === "/alumnos/entregas")
+    ? pestanas.filter((p) => deMentores.includes(p.href))
     : esProfesor
       ? [...pestanas.filter((p) => p.href !== "/alumnos/grupo"), ...pestanasProfesores]
       : pestanas;
