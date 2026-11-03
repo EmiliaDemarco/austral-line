@@ -6,26 +6,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRol } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { analizarCompetencia, hayIA, MODELO } from "./_agente";
-import { MAXIMO_POR_DIA } from "./_limite";
+import { analizarCompetencia, hayIA, MODELO, SinFuentes } from "./_agente";
 
 const volver = (proyectoId: string, aviso?: { error?: string; ok?: string }) => {
   revalidatePath("/alumnos/competencia");
   const q = aviso?.error ? `&error=${encodeURIComponent(aviso.error)}` : aviso?.ok ? `&ok=${encodeURIComponent(aviso.ok)}` : "";
   redirect(`/alumnos/competencia?proyecto=${encodeURIComponent(proyectoId)}${q}`);
 };
-
-// Error de la IA en palabras claras (sin los códigos de color que trae el mensaje original).
-function mensajeDeError(e: unknown) {
-  const original = (e instanceof Error ? e.message : String(e)).replace(/\u001b\[[0-9;]*m/g, "");
-  if (/unauthenticated|api key|401|403/i.test(original)) {
-    return "La clave de IA no funciona (el servicio la rechazó). Avisales a los profesores para que la revisen.";
-  }
-  if (/credit|quota|insufficient|402/i.test(original)) {
-    return "La cuenta de IA se quedó sin crédito. Avisales a los profesores.";
-  }
-  return `La IA no pudo terminar el análisis (${original.slice(0, 200)}). Probá de nuevo en un rato.`;
-}
 
 const texto = (formData: FormData, campo: string) => String(formData.get(campo) ?? "").trim();
 
@@ -49,34 +36,44 @@ export async function guardarBreve(formData: FormData) {
   volver(proyectoId, error ? { error: `No se pudo guardar: ${error.message}` } : { ok: "Breve guardado." });
 }
 
+// 1) Reserva el lugar en la base (cuenta para el límite del día aunque después falle), 2) llama a la IA con
+// tiempo máximo, 3) guarda el resultado o marca el error. Si algo falla, el alumno ve un mensaje propio y el
+// detalle técnico queda en el registro del servidor.
 export async function analizar(formData: FormData) {
-  const persona = await requireRol("alumno");
+  await requireRol("alumno");
   const proyectoId = texto(formData, "proyecto_id");
-  if (!hayIA()) volver(proyectoId, { error: "Falta configurar la clave de IA: avisales a los profesores." });
+  if (!hayIA()) volver(proyectoId, { error: "Falta configurar la IA: avisales a los profesores." });
   const supabase = await createClient();
 
-  const [{ data: breve }, { data: proyecto }, { data: hechos }] = await Promise.all([
-    supabase.from("alumnos_competencia_breve").select("problema, solucion, publico, mercado").eq("proyecto_id", proyectoId).maybeSingle(),
-    supabase.from("proyectos").select("nombre").eq("id", proyectoId).maybeSingle(),
-    supabase.rpc("alumnos_analisis_hoy", { p_proyecto: proyectoId }),
-  ]);
-  if (!breve || !proyecto) volver(proyectoId, { error: "Primero completen y guarden el breve del proyecto." });
-  if ((hechos ?? 0) >= MAXIMO_POR_DIA) volver(proyectoId, { error: `Ya hicieron los ${MAXIMO_POR_DIA} análisis de hoy. Mañana pueden pedir otro.` });
+  const { data: proyecto } = await supabase.from("proyectos").select("nombre").eq("id", proyectoId).maybeSingle();
+  if (!proyecto) volver(proyectoId, { error: "No encontramos el proyecto." });
+  const { data: reserva, error: errorReserva } = await supabase.rpc("alumnos_reservar_analisis", { p_proyecto: proyectoId });
+  if (errorReserva || !reserva) volver(proyectoId, { error: errorReserva?.message ?? "No se pudo pedir el análisis." });
+  const { data: breve } = await supabase
+    .from("alumnos_competencia_analisis")
+    .select("breve")
+    .eq("id", reserva!)
+    .single();
+  const b = breve!.breve as { problema: string; solucion: string; publico: string; mercado: string };
 
-  let resultado;
+  let resultado: Awaited<ReturnType<typeof analizarCompetencia>> | null = null;
+  let aviso: string | null = null;
   try {
-    resultado = await analizarCompetencia({ nombre: proyecto!.nombre, ...breve! });
+    resultado = await analizarCompetencia({ nombre: proyecto!.nombre, ...b });
   } catch (e) {
-    volver(proyectoId, { error: mensajeDeError(e) });
+    console.error("[alumnos/competencia] la IA falló", e);
+    aviso =
+      e instanceof SinFuentes
+        ? "La búsqueda en internet no devolvió resultados. Prueben contar el problema y la solución con otras palabras."
+        : "La IA no pudo terminar el análisis. Ese intento cuenta para el día; prueben de nuevo en un rato o avisen a los profesores si sigue fallando.";
   }
 
-  const { error } = await supabase.from("alumnos_competencia_analisis").insert({
-    proyecto_id: proyectoId,
-    breve: breve!,
-    resultado: resultado!,
-    modelo: MODELO,
-    pedido_por: persona.id,
+  const { error } = await supabase.rpc("alumnos_completar_analisis", {
+    p_analisis: reserva!,
+    p_resultado: resultado ?? undefined,
+    p_modelo: MODELO,
   });
-  if (error?.code === "42501") volver(proyectoId, { error: `Ya hicieron los ${MAXIMO_POR_DIA} análisis de hoy. Mañana pueden pedir otro.` });
-  volver(proyectoId, error ? { error: `No se pudo guardar el análisis: ${error.message}` } : { ok: "Listo: el análisis nuevo está abajo." });
+  if (error) console.error("[alumnos/competencia] no se pudo guardar el análisis", error);
+  if (aviso) volver(proyectoId, { error: aviso });
+  volver(proyectoId, error ? { error: "No se pudo guardar el análisis. Avisales a los profesores." } : { ok: "Listo: el análisis nuevo está abajo." });
 }

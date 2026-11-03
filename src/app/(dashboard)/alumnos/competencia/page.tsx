@@ -11,7 +11,6 @@ import { BotonEnviar } from "./_components/boton-enviar";
 import { Analisis } from "./_components/analisis";
 import { analizar, guardarBreve } from "./_acciones";
 import { hayIA, type Resultado } from "./_agente";
-import { MAXIMO_POR_DIA } from "./_limite";
 
 // El análisis busca en internet y tarda alrededor de un minuto.
 export const maxDuration = 120;
@@ -73,19 +72,24 @@ export default async function Competencia({ searchParams }: PageProps<"/alumnos/
   const proyecto = proyectos.find((p) => p.id === elegido) ?? proyectos[0];
   const esAlumno = persona.rol === "alumno";
 
-  const [breve, analisis, hoy] = await Promise.all([
+  const [breve, analisis, hoy, limite] = await Promise.all([
     supabase.from("alumnos_competencia_breve").select("problema, solucion, publico, mercado, updated_at").eq("proyecto_id", proyecto.id).maybeSingle(),
     supabase
       .from("alumnos_competencia_analisis")
-      .select("id, resultado, created_at, pedido:personas!alumnos_competencia_analisis_pedido_por_fkey(nombre)")
+      .select("id, estado, resultado, created_at, pedido:personas!alumnos_competencia_analisis_pedido_por_fkey(nombre)")
       .eq("proyecto_id", proyecto.id)
       .order("created_at", { ascending: false }),
     supabase.rpc("alumnos_analisis_hoy", { p_proyecto: proyecto.id }),
+    supabase.rpc("alumnos_analisis_limite"),
   ]);
-  for (const r of [breve, analisis, hoy]) if (r.error) throw r.error;
+  for (const r of [breve, analisis, hoy, limite]) if (r.error) throw r.error;
 
-  const restantes = Math.max(0, MAXIMO_POR_DIA - (hoy.data ?? 0));
-  const [ultimo, ...anteriores] = analisis.data!;
+  const porDia = limite.data ?? 0;
+  const restantes = Math.max(0, porDia - (hoy.data ?? 0));
+  // Solo se muestran los análisis terminados; uno pendiente de hace menos de 3 minutos está en curso.
+  const [ultimo, ...anteriores] = analisis.data!.filter((a) => a.estado === "listo");
+  const haceTres = new Date().getTime() - 3 * 60 * 1000;
+  const enCurso = analisis.data!.some((a) => a.estado === "pendiente" && new Date(a.created_at).getTime() > haceTres);
   const breveCambio = !!(ultimo && breve.data && breve.data.updated_at > ultimo.created_at);
   const ia = hayIA();
 
@@ -186,15 +190,16 @@ export default async function Competencia({ searchParams }: PageProps<"/alumnos/
                     : !breve.data
                       ? "Primero guarden el breve."
                       : restantes === 0
-                        ? "Ya hicieron los 3 de hoy. Mañana pueden pedir otro."
-                        : `Les quedan ${restantes} de ${MAXIMO_POR_DIA} por hoy.`}
+                        ? `Ya hicieron los ${porDia} de hoy. Mañana pueden pedir otro.`
+                        : `Les quedan ${restantes} de ${porDia} por hoy.`}
                 </span>
               </form>
             )}
           </div>
 
+          {enCurso && <p className="text-sm text-[#666]">Hay un análisis en curso: en un minuto recargá la página para verlo.</p>}
           {ultimo ? (
-            <Analisis resultado={ultimo.resultado as unknown as Resultado} />
+            <Analisis resultado={ultimo.resultado as Partial<Resultado>} />
           ) : (
             <p className="text-sm text-[#666]">Todavía no hay ningún análisis para este proyecto.</p>
           )}
@@ -208,7 +213,7 @@ export default async function Competencia({ searchParams }: PageProps<"/alumnos/
                 <summary className="cursor-pointer px-6 py-3 text-sm">
                   {fechaHora(a.created_at)} · {a.pedido?.nombre ?? "alguien del grupo"}
                 </summary>
-                <div className="border-t px-6 py-5"><Analisis resultado={a.resultado as unknown as Resultado} /></div>
+                <div className="border-t px-6 py-5"><Analisis resultado={a.resultado as Partial<Resultado>} /></div>
               </details>
             ))}
           </section>

@@ -21,8 +21,17 @@ function Lista({ titulo, items, vacio }: { titulo: string; items: string[]; vaci
   );
 }
 
-export function Analisis({ resultado }: { resultado: Resultado }) {
-  const r = resultado;
+// El resultado viene de la base: se lee con valores por defecto por si le falta algún campo.
+export function Analisis({ resultado }: { resultado: Partial<Resultado> }) {
+  const r = {
+    resumen: resultado.resumen ?? "",
+    competidores: resultado.competidores ?? [],
+    diferenciales: resultado.diferenciales ?? [],
+    alertas: resultado.alertas ?? [],
+    preguntas: resultado.preguntas ?? [],
+    fuentes: resultado.fuentes ?? [],
+    descartados: resultado.descartados ?? 0,
+  };
   return (
     <div className="grid gap-6">
       <p className="text-sm">{r.resumen}</p>
@@ -57,6 +66,12 @@ export function Analisis({ resultado }: { resultado: Resultado }) {
               ))}
             </TableBody>
           </Table>
+        )}
+        {r.descartados > 0 && (
+          <p className="text-xs text-[#666]">
+            {r.descartados === 1 ? "Se descartó 1 competidor" : `Se descartaron ${r.descartados} competidores`} que la IA nombró
+            sin una fuente de la búsqueda para verificarlo.
+          </p>
         )}
         <p className="text-xs text-[#666]">
           Directo: resuelve lo mismo para el mismo público. Indirecto: otra solución al mismo problema. Sustituto: lo que la
