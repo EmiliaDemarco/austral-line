@@ -595,6 +595,33 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"alumnos_notas": {
+                  Row: {
+                    "cargada_por": string | null,"comentario": string | null,"evento_id": string,"id": string,"persona_id": string | null,"proyecto_id": string | null,"puntos": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cargada_por"?: string | null,"comentario"?: string | null,"evento_id": string,"id"?: string,"persona_id"?: string | null,"proyecto_id"?: string | null,"puntos": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "cargada_por"?: string | null,"comentario"?: string | null,"evento_id"?: string,"id"?: string,"persona_id"?: string | null,"proyecto_id"?: string | null,"puntos"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_notas_evento_id_fkey"
+      columns: ["evento_id"]
+isOneToOne: false
+      referencedRelation: "eventos"
+      referencedColumns: ["id"]
+    },
+                    {
+      foreignKeyName: "alumnos_notas_proyecto_id_fkey"
+      columns: ["proyecto_id"]
+isOneToOne: false
+      referencedRelation: "proyectos"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"alumnos_perfiles": {
                   Row: {
                     "busca_equipo": boolean,"persona_id": string,"sobre_mi": string | null,"updated_at": string
@@ -618,6 +645,40 @@ isOneToOne: true
       columns: ["persona_id"]
 isOneToOne: true
       referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"alumnos_puntaje_config": {
+                  Row: {
+                    "id": number,"minimo": number | null,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: number,"minimo"?: number | null,"updated_at"?: string
+                  }
+                  Update: {
+                    "id"?: number,"minimo"?: number | null,"updated_at"?: string
+                  }
+                  Relationships: [
+
+                  ]
+                },"alumnos_puntaje_hitos": {
+                  Row: {
+                    "evento_id": string,"maximo": number,"updated_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "evento_id": string,"maximo": number,"updated_at"?: string
+                  }
+                  Update: {
+                    "evento_id"?: string,"maximo"?: number,"updated_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_puntaje_hitos_evento_id_fkey"
+      columns: ["evento_id"]
+isOneToOne: true
+      referencedRelation: "eventos"
       referencedColumns: ["id"]
     }
                   ]
