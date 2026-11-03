@@ -40,11 +40,11 @@ export default async function AprobarGrupos({ searchParams }: PageProps<"/alumno
     supabase
       .from("alumnos_solicitudes_cambio")
       .select(
-        "id, motivo, created_at, quien:personas!alumnos_solicitudes_cambio_persona_id_fkey(nombre), origen:proyectos!alumnos_solicitudes_cambio_proyecto_origen_fkey(nombre), destino:proyectos!alumnos_solicitudes_cambio_proyecto_destino_fkey(nombre)",
+        "id, motivo, created_at, persona_id, proyecto_origen, quien:personas!alumnos_solicitudes_cambio_persona_id_fkey(nombre), origen:proyectos!alumnos_solicitudes_cambio_proyecto_origen_fkey(nombre), destino:proyectos!alumnos_solicitudes_cambio_proyecto_destino_fkey(nombre)",
       )
       .eq("estado", "pendiente")
       .order("created_at"),
-    supabase.from("proyecto_integrantes").select("persona_id"),
+    supabase.from("proyecto_integrantes").select("persona_id, proyecto_id"),
     supabase.from("personas_contacto").select("id, nombre, email").eq("rol", "alumno").order("nombre"),
   ]);
   for (const r of [config, propuestas, carreras, solicitudes, integrantes, alumnos]) if (r.error) throw r.error;
@@ -52,6 +52,21 @@ export default async function AprobarGrupos({ searchParams }: PageProps<"/alumno
   const cierre = config.data?.cierre ?? null;
   const carreraDe = new Map(carreras.data!.map((c) => [c.persona_id, c.alumnos_carreras_maestro.nombre]));
   const enviadas = propuestas.data!.filter((p) => p.estado === "enviada");
+
+  // Cómo queda el grupo de origen si se aprueba una solicitud: avisa si queda con menos de 2 integrantes
+  // o con una sola carrera, para que los profesores lo sepan antes de decidir.
+  const avisoOrigen = (proyectoOrigen: string, persona: string) => {
+    const quedan = integrantes.data!.filter((i) => i.proyecto_id === proyectoOrigen && i.persona_id !== persona);
+    if (quedan.length < 2) {
+      return quedan.length === 0 ? "Si la aprobás, el grupo de origen queda sin integrantes." : "Si la aprobás, el grupo de origen queda con 1 solo integrante.";
+    }
+    const conCarrera = quedan.filter((i) => carreraDe.has(i.persona_id));
+    const distintas = new Set(conCarrera.map((i) => carreraDe.get(i.persona_id)));
+    if (conCarrera.length === quedan.length && distintas.size < 2) {
+      return `Si la aprobás, el grupo de origen deja de ser interdisciplinario: quedan todos de ${[...distintas][0]}.`;
+    }
+    return null;
+  };
   const armando = propuestas.data!.filter((p) => p.estado === "armando");
 
   // Alumnos que todavía no tienen grupo ni están en una propuesta.
@@ -139,6 +154,9 @@ export default async function AprobarGrupos({ searchParams }: PageProps<"/alumno
               {s.destino ? <>pasarse a <strong className="font-medium">{s.destino.nombre}</strong></> : "salir del grupo"}.
             </p>
             <p className="border-l-2 pl-3 text-[#666]">{s.motivo}</p>
+            {avisoOrigen(s.proyecto_origen, s.persona_id) && (
+              <p className="border border-destructive px-3 py-2 text-destructive">{avisoOrigen(s.proyecto_origen, s.persona_id)}</p>
+            )}
             <form action={resolverSolicitud} className="grid gap-2">
               <input type="hidden" name="solicitud_id" value={s.id} />
               <textarea name="respuesta" maxLength={1000} rows={2} placeholder="Respuesta para el alumno (opcional)" aria-label="Respuesta" className={campo} />

@@ -73,7 +73,7 @@ export default async function ArmarGrupo({ searchParams }: PageProps<"/alumnos/g
       .in("estado", ["armando", "enviada"])
       .order("created_at"),
     supabase.from("alumnos_carreras").select("persona_id, alumnos_carreras_maestro(nombre)"),
-    supabase.from("alumnos_ideas").select("id, titulo").eq("estado", "disponible").order("titulo"),
+    supabase.rpc("alumnos_ideas_libres"),
     supabase
       .from("alumnos_solicitudes_cambio")
       .select("id, estado, motivo, respuesta, created_at, destino:proyectos!alumnos_solicitudes_cambio_proyecto_destino_fkey(nombre)")

@@ -1810,6 +1810,11 @@ isOneToOne: false
 "alumnos_idea_libre":
 { Args: { "p_idea": string,"p_salvo"?: string }; Returns: boolean
                            },
+"alumnos_ideas_libres":
+{ Args: Record<PropertyKey, never>; Returns: {
+              "id": string,"titulo": string
+            }[]
+                           },
 "alumnos_invitar":
 { Args: { "p_persona": string,"p_propuesta": string }; Returns: undefined
                            },
