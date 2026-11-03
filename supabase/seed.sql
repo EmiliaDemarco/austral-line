@@ -333,3 +333,9 @@ select p.id, pe.id,
        case when pe.email = 'fede@alumnos.austral.edu.ar' then now() end
 from p, personas pe
 where pe.email in ('fede@alumnos.austral.edu.ar', 'diego@alumnos.austral.edu.ar');
+
+-- GRUPO MENTORES: una reunión de Pablo, que tiene perfil publicado, para ver el resumen con perfil (Marta no tiene).
+insert into mentores_reuniones (proyecto_id, mentor_id, inicio, lugar)
+select p.id, m.id, now() + interval '4 days', 'Sala 3'
+from proyectos p, personas m
+where p.nombre = 'Tutorly' and m.email = 'pablo@empresa.com';
