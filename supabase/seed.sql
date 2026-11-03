@@ -416,3 +416,9 @@ select p.id, h.id from (values
 ) as v(proyecto, habilidad)
 join proyectos p on p.nombre = v.proyecto
 join austral_habilidades h on h.nombre = v.habilidad;
+
+-- GRUPO MENTORES: una reunión de Pablo, que tiene perfil publicado, para ver el resumen con perfil (Marta no tiene).
+insert into mentores_reuniones (proyecto_id, mentor_id, inicio, lugar)
+select p.id, m.id, now() + interval '4 days', 'Sala 3'
+from proyectos p, personas m
+where p.nombre = 'Tutorly' and m.email = 'pablo@empresa.com';
