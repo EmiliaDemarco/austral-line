@@ -499,7 +499,19 @@ isOneToOne: true
                     "anio"?: number,"cargado_por"?: string | null,"created_at"?: string,"descripcion"?: string,"id"?: string,"nombre"?: string,"resultado"?: string | null
                   }
                   Relationships: [
-
+                    {
+      foreignKeyName: "alumnos_proyectos_anteriores_cargado_por_fkey"
+      columns: ["cargado_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_proyectos_anteriores_cargado_por_fkey"
+      columns: ["cargado_por"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"austral_contactos_mentores": {
                   Row: {
