@@ -505,22 +505,19 @@ isOneToOne: true
 isOneToOne: false
       referencedRelation: "personas"
       referencedColumns: ["id"]
-    },
-                    {
+    },{
       foreignKeyName: "alumnos_preguntas_persona_id_fkey"
       columns: ["persona_id"]
 isOneToOne: false
       referencedRelation: "personas_contacto"
       referencedColumns: ["id"]
-    },
-                    {
+    },{
       foreignKeyName: "alumnos_preguntas_respondida_por_fkey"
       columns: ["respondida_por"]
 isOneToOne: false
       referencedRelation: "personas"
       referencedColumns: ["id"]
-    },
-                    {
+    },{
       foreignKeyName: "alumnos_preguntas_respondida_por_fkey"
       columns: ["respondida_por"]
 isOneToOne: false
@@ -540,7 +537,19 @@ isOneToOne: false
                     "id"?: number,"texto"?: string,"updated_at"?: string,"updated_by"?: string | null
                   }
                   Relationships: [
-
+                    {
+      foreignKeyName: "alumnos_reglamento_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_reglamento_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"austral_contactos_mentores": {
                   Row: {
