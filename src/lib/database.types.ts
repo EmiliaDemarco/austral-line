@@ -1651,7 +1651,7 @@ isOneToOne: false
                            },
 "alumnos_disponibilidad_grupo":
 { Args: { "p_proyecto": string }; Returns: {
-              "cargaron": number,"dia": number,"franja": number,"integrantes": number,"pueden": number
+              "dia": number,"franja": number,"nombre": string,"persona_id": string
             }[]
                            },
 "alumnos_editar_nota_entrega":
