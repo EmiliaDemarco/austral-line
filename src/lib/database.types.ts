@@ -575,6 +575,18 @@ isOneToOne: true
 isOneToOne: false
       referencedRelation: "alumnos_entregas"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_validaciones_pedido_por_fkey"
+      columns: ["pedido_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_validaciones_pedido_por_fkey"
+      columns: ["pedido_por"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
     }
                   ]
                 },"austral_contactos_mentores": {
