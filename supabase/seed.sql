@@ -422,3 +422,8 @@ insert into mentores_reuniones (proyecto_id, mentor_id, inicio, lugar)
 select p.id, m.id, now() + interval '4 days', 'Sala 3'
 from proyectos p, personas m
 where p.nombre = 'Tutorly' and m.email = 'pablo@empresa.com';
+-- GRUPO ALUMNOS: proyectos de años anteriores (para el aviso de parecidos en el banco de ideas).
+insert into alumnos_proyectos_anteriores (nombre, anio, descripcion, resultado) values
+  ('MaquiCampo', 2024, 'Plataforma para que productores vecinos alquilen su maquinaria agrícola ociosa a otros productores de la zona.',
+   'Llegó al Demo Day; les costó resolver los seguros de la maquinaria.'),
+  ('Cocina Fácil', 2023, 'Recetas saludables y baratas para estudiantes que viven solos y tienen poco tiempo.', null);
