@@ -608,13 +608,36 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "alumnos_notas_cargada_por_fkey"
+      columns: ["cargada_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_notas_cargada_por_fkey"
+      columns: ["cargada_por"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "alumnos_notas_evento_id_fkey"
       columns: ["evento_id"]
 isOneToOne: false
       referencedRelation: "eventos"
       referencedColumns: ["id"]
-    },
-                    {
+    },{
+      foreignKeyName: "alumnos_notas_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_notas_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    },{
       foreignKeyName: "alumnos_notas_proyecto_id_fkey"
       columns: ["proyecto_id"]
 isOneToOne: false
@@ -660,7 +683,7 @@ isOneToOne: true
                     "id"?: number,"minimo"?: number | null,"updated_at"?: string
                   }
                   Relationships: [
-
+                    
                   ]
                 },"alumnos_puntaje_hitos": {
                   Row: {
