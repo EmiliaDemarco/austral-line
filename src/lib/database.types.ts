@@ -81,7 +81,19 @@ isOneToOne: true
                     "dia"?: number,"franja"?: number,"persona_id"?: string
                   }
                   Relationships: [
-
+                    {
+      foreignKeyName: "alumnos_disponibilidad_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_disponibilidad_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    }
                   ]
                 },"alumnos_entregas": {
                   Row: {
