@@ -69,6 +69,20 @@ isOneToOne: true
                   Relationships: [
                     
                   ]
+                },"alumnos_disponibilidad": {
+                  Row: {
+                    "dia": number,"franja": number,"persona_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "dia": number,"franja": number,"persona_id": string
+                  }
+                  Update: {
+                    "dia"?: number,"franja"?: number,"persona_id"?: string
+                  }
+                  Relationships: [
+
+                  ]
                 },"alumnos_entregas": {
                   Row: {
                     "archivo_path": string,"created_at": string,"evento_id": string,"id": string,"nombre_archivo": string,"nota": string | null,"persona_id": string | null,"proyecto_id": string | null,"subida_por": string | null,"tamano_bytes": number,"version": number
@@ -1622,6 +1636,11 @@ isOneToOne: false
                            },
 "alumnos_cierre_hito":
 { Args: { "p_evento": string }; Returns: string
+                           },
+"alumnos_disponibilidad_grupo":
+{ Args: { "p_proyecto": string }; Returns: {
+              "cargaron": number,"dia": number,"franja": number,"integrantes": number,"pueden": number
+            }[]
                            },
 "alumnos_editar_nota_entrega":
 { Args: { "p_entrega": string,"p_nota": string }; Returns: undefined
