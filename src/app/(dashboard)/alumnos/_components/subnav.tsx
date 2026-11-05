@@ -17,6 +17,11 @@ const pestanas = [
 
 // Lo que usan los mentores: las entregas y la competencia de sus grupos.
 const deMentores = ["/alumnos/entregas", "/alumnos/competencia"];
+  { href: "/alumnos/agenda", label: "Agenda" },
+];
+
+// Lo que usan los mentores: las entregas y la agenda de sus grupos.
+const deMentores = ["/alumnos/entregas", "/alumnos/agenda"];
 
 // Solo la ven los profesores (rol admin).
 const pestanaProfesores = { href: "/alumnos/panel", label: "Panel de profesores" };
