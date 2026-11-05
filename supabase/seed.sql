@@ -266,3 +266,9 @@ where i.titulo = 'Finanzas personales para estudiantes' and pe.email = 'carla@al
 -- GRUPO ALUMNOS: el Kickoff pide entrega grupal e individual (para probar las entregas individuales).
 insert into alumnos_hitos_tipo (evento_id, tipo)
 select id, 'ambas' from eventos where nombre = 'Kickoff';
+
+-- GRUPO ALUMNOS: proyectos de años anteriores (para el aviso de parecidos en el banco de ideas).
+insert into alumnos_proyectos_anteriores (nombre, anio, descripcion, resultado) values
+  ('MaquiCampo', 2024, 'Plataforma para que productores vecinos alquilen su maquinaria agrícola ociosa a otros productores de la zona.',
+   'Llegó al Demo Day; les costó resolver los seguros de la maquinaria.'),
+  ('Cocina Fácil', 2023, 'Recetas saludables y baratas para estudiantes que viven solos y tienen poco tiempo.', null);

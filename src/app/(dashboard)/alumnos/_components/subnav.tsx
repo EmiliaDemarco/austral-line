@@ -16,6 +16,7 @@ const pestanas = [
 
 // Solo la ven los profesores (rol admin).
 const pestanaProfesores = { href: "/alumnos/panel", label: "Panel de profesores" };
+const pestanaAnteriores = { href: "/alumnos/anteriores", label: "Años anteriores" };
 
 // Los mentores solo usan Entregas (ven las de sus grupos y dejan devoluciones).
 export function SubNav({ esProfesor = false, soloEntregas = false }: { esProfesor?: boolean; soloEntregas?: boolean }) {
@@ -23,7 +24,7 @@ export function SubNav({ esProfesor = false, soloEntregas = false }: { esProfeso
   const visibles = soloEntregas
     ? pestanas.filter((p) => p.href === "/alumnos/entregas")
     : esProfesor
-      ? [...pestanas, pestanaProfesores]
+      ? [...pestanas, pestanaProfesores, pestanaAnteriores]
       : pestanas;
   return (
     <nav className="mb-8 flex gap-6 overflow-x-auto border-b">
