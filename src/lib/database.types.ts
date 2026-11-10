@@ -203,6 +203,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"alumnos_disponibilidad": {
+                  Row: {
+                    "dia": number,"franja": number,"persona_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "dia": number,"franja": number,"persona_id": string
+                  }
+                  Update: {
+                    "dia"?: number,"franja"?: number,"persona_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_disponibilidad_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_disponibilidad_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"alumnos_entregas": {
                   Row: {
                     "archivo_path": string,"created_at": string,"evento_id": string,"id": string,"nombre_archivo": string,"nota": string | null,"persona_id": string | null,"proyecto_id": string | null,"subida_por": string | null,"tamano_bytes": number,"version": number
@@ -1941,6 +1967,11 @@ isOneToOne: false
                            },
 "alumnos_completar_analisis":
 { Args: { "p_analisis": string,"p_modelo"?: string,"p_resultado"?: Json }; Returns: undefined
+                           },
+"alumnos_disponibilidad_grupo":
+{ Args: { "p_proyecto": string }; Returns: {
+              "dia": number,"franja": number,"nombre": string,"persona_id": string
+            }[]
                            },
 "alumnos_editar_nota_entrega":
 { Args: { "p_entrega": string,"p_nota": string }; Returns: undefined
