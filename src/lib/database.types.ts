@@ -621,6 +621,70 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"alumnos_preguntas": {
+                  Row: {
+                    "cita": string | null,"created_at": string,"estado": string,"id": string,"persona_id": string,"pregunta": string,"respondida_at": string | null,"respondida_por": string | null,"respuesta_ia": string | null,"respuesta_profesores": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "cita"?: string | null,"created_at"?: string,"estado"?: string,"id"?: string,"persona_id": string,"pregunta": string,"respondida_at"?: string | null,"respondida_por"?: string | null,"respuesta_ia"?: string | null,"respuesta_profesores"?: string | null
+                  }
+                  Update: {
+                    "cita"?: string | null,"created_at"?: string,"estado"?: string,"id"?: string,"persona_id"?: string,"pregunta"?: string,"respondida_at"?: string | null,"respondida_por"?: string | null,"respuesta_ia"?: string | null,"respuesta_profesores"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_preguntas_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_preguntas_persona_id_fkey"
+      columns: ["persona_id"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_preguntas_respondida_por_fkey"
+      columns: ["respondida_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_preguntas_respondida_por_fkey"
+      columns: ["respondida_por"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"alumnos_reglamento": {
+                  Row: {
+                    "id": number,"texto": string,"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "id"?: number,"texto"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Update: {
+                    "id"?: number,"texto"?: string,"updated_at"?: string,"updated_by"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_reglamento_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_reglamento_updated_by_fkey"
+      columns: ["updated_by"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"austral_contactos_mentores": {
                   Row: {
                     "acepta_consultas_otros": boolean,"actualizado_at": string,"email_contacto": string,"especialidades": (string)[],"industria": string,"mentor_id": string,"modalidad": string,"publicado": boolean,"telefono_contacto": string
@@ -1942,6 +2006,12 @@ isOneToOne: false
 "alumnos_completar_analisis":
 { Args: { "p_analisis": string,"p_modelo"?: string,"p_resultado"?: Json }; Returns: undefined
                            },
+"alumnos_completar_pregunta":
+{ Args: { "p_cita"?: string,"p_estado": string,"p_pregunta": string,"p_respuesta"?: string }; Returns: undefined
+                           },
+"alumnos_derivar_pregunta":
+{ Args: { "p_pregunta": string }; Returns: undefined
+                           },
 "alumnos_editar_nota_entrega":
 { Args: { "p_entrega": string,"p_nota": string }; Returns: undefined
                            },
@@ -1959,8 +2029,17 @@ isOneToOne: false
 "alumnos_guardar_perfil":
 { Args: { "p_busca_equipo": boolean,"p_carrera_id": number,"p_intereses": Json,"p_sobre_mi": string }; Returns: undefined
                            },
+"alumnos_preguntas_hoy":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"alumnos_preguntas_limite":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
 "alumnos_reservar_analisis":
 { Args: { "p_proyecto": string }; Returns: string
+                           },
+"alumnos_reservar_pregunta":
+{ Args: { "p_pregunta": string }; Returns: string
                            },
 "alumnos_soy_integrante":
 { Args: { "p_proyecto": string }; Returns: boolean
