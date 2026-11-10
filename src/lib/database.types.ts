@@ -621,6 +621,32 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"alumnos_proyectos_anteriores": {
+                  Row: {
+                    "anio": number,"cargado_por": string | null,"created_at": string,"descripcion": string,"id": string,"nombre": string,"resultado": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "anio": number,"cargado_por"?: string | null,"created_at"?: string,"descripcion": string,"id"?: string,"nombre": string,"resultado"?: string | null
+                  }
+                  Update: {
+                    "anio"?: number,"cargado_por"?: string | null,"created_at"?: string,"descripcion"?: string,"id"?: string,"nombre"?: string,"resultado"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_proyectos_anteriores_cargado_por_fkey"
+      columns: ["cargado_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_proyectos_anteriores_cargado_por_fkey"
+      columns: ["cargado_por"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"austral_contactos_mentores": {
                   Row: {
                     "acepta_consultas_otros": boolean,"actualizado_at": string,"email_contacto": string,"especialidades": (string)[],"industria": string,"mentor_id": string,"modalidad": string,"publicado": boolean,"telefono_contacto": string
@@ -1958,6 +1984,11 @@ isOneToOne: false
                            },
 "alumnos_guardar_perfil":
 { Args: { "p_busca_equipo": boolean,"p_carrera_id": number,"p_intereses": Json,"p_sobre_mi": string }; Returns: undefined
+                           },
+"alumnos_parecidos_anteriores":
+{ Args: { "p_texto": string }; Returns: {
+              "anio": number,"comunes": number,"descripcion": string,"id": string,"nombre": string,"resultado": string
+            }[]
                            },
 "alumnos_reservar_analisis":
 { Args: { "p_proyecto": string }; Returns: string
