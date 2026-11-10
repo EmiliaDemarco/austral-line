@@ -422,6 +422,7 @@ insert into mentores_reuniones (proyecto_id, mentor_id, inicio, lugar)
 select p.id, m.id, now() + interval '4 days', 'Sala 3'
 from proyectos p, personas m
 where p.nombre = 'Tutorly' and m.email = 'pablo@empresa.com';
+
 -- GRUPO ALUMNOS: puntaje para regularizar. Mínimo 60; los dos primeros hitos valen 40 y 60 puntos;
 -- AgroSense ya tiene 32 en el primero.
 update alumnos_puntaje_config set minimo = 60 where id = 1;
