@@ -621,6 +621,38 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"alumnos_validaciones": {
+                  Row: {
+                    "created_at": string,"entrega_id": string,"estado": string,"id": string,"pedido_por": string | null,"resultado": Json | null,"terminado_at": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"entrega_id": string,"estado"?: string,"id"?: string,"pedido_por"?: string | null,"resultado"?: Json | null,"terminado_at"?: string | null
+                  }
+                  Update: {
+                    "created_at"?: string,"entrega_id"?: string,"estado"?: string,"id"?: string,"pedido_por"?: string | null,"resultado"?: Json | null,"terminado_at"?: string | null
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "alumnos_validaciones_entrega_id_fkey"
+      columns: ["entrega_id"]
+isOneToOne: false
+      referencedRelation: "alumnos_entregas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_validaciones_pedido_por_fkey"
+      columns: ["pedido_por"]
+isOneToOne: false
+      referencedRelation: "personas"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "alumnos_validaciones_pedido_por_fkey"
+      columns: ["pedido_por"]
+isOneToOne: false
+      referencedRelation: "personas_contacto"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"austral_contactos_mentores": {
                   Row: {
                     "acepta_consultas_otros": boolean,"actualizado_at": string,"email_contacto": string,"especialidades": (string)[],"industria": string,"mentor_id": string,"modalidad": string,"publicado": boolean,"telefono_contacto": string
@@ -1942,6 +1974,9 @@ isOneToOne: false
 "alumnos_completar_analisis":
 { Args: { "p_analisis": string,"p_modelo"?: string,"p_resultado"?: Json }; Returns: undefined
                            },
+"alumnos_completar_validacion":
+{ Args: { "p_resultado"?: Json,"p_validacion": string }; Returns: undefined
+                           },
 "alumnos_editar_nota_entrega":
 { Args: { "p_entrega": string,"p_nota": string }; Returns: undefined
                            },
@@ -1962,6 +1997,9 @@ isOneToOne: false
 "alumnos_reservar_analisis":
 { Args: { "p_proyecto": string }; Returns: string
                            },
+"alumnos_reservar_validacion":
+{ Args: { "p_entrega": string }; Returns: string
+                           },
 "alumnos_soy_integrante":
 { Args: { "p_proyecto": string }; Returns: boolean
                            },
@@ -1970,6 +2008,9 @@ isOneToOne: false
                            },
 "alumnos_tipo_hito":
 { Args: { "p_evento": string }; Returns: string
+                           },
+"alumnos_validaciones_limite":
+{ Args: Record<PropertyKey, never>; Returns: number
                            },
 "alumnos_yo":
 { Args: Record<PropertyKey, never>; Returns: string
